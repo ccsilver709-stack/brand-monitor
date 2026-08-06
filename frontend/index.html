@@ -5,249 +5,1742 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>品牌智能监测平台</title>
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-  <link rel="stylesheet" href="styles/main.css">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --primary: #6366f1;
+      --primary-light: #818cf8;
+      --primary-bg: #eef2ff;
+      --pr: #8b5cf6;
+      --pr-bg: #f5f3ff;
+      --affiliate: #06b6d4;
+      --affiliate-bg: #ecfeff;
+      --social: #ec4899;
+      --social-bg: #fdf2f8;
+      --sentiment: #6366f1;
+      --sentiment-bg: #eef2ff;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      --text-muted: #94a3b8;
+      --border: #e2e8f0;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+      --radius: 12px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 50%, #fdf4ff 100%);
+      color: var(--text-primary);
+      min-height: 100vh;
+      font-size: 14px;
+    }
+
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ===== 侧边栏 ===== */
+    .sidebar {
+      width: 240px;
+      background: rgba(255,255,255,0.8);
+      backdrop-filter: blur(10px);
+      border-right: 1px solid var(--border);
+      padding: 20px 0;
+      position: fixed;
+      height: 100vh;
+      overflow-y: auto;
+      z-index: 100;
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 20px 24px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--pr));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .logo-text h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .logo-text p {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .sidebar-section {
+      margin-bottom: 24px;
+      padding: 0 12px;
+    }
+
+    .sidebar-section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 0 8px 10px;
+    }
+
+    .project-tabs {
+      display: flex;
+      background: #f1f5f9;
+      border-radius: 8px;
+      padding: 3px;
+      margin-bottom: 12px;
+    }
+
+    .project-tab {
+      flex: 1;
+      text-align: center;
+      padding: 6px 8px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .project-tab.active {
+      background: white;
+      color: var(--primary);
+      box-shadow: var(--shadow);
+    }
+
+    .project-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 4px;
+    }
+
+    .project-item:hover {
+      background: var(--primary-bg);
+    }
+
+    .project-item.active {
+      background: var(--primary-bg);
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .project-item-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .project-status {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+
+    .add-project-btn {
+      width: 100%;
+      padding: 10px;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+
+    .add-project-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: var(--primary-bg);
+    }
+
+    .keyword-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .keyword-tag {
+      padding: 4px 10px;
+      background: #f1f5f9;
+      border-radius: 20px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .keyword-tag:hover {
+      background: var(--primary-bg);
+      color: var(--primary);
+    }
+
+    .add-keyword-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px dashed var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .add-keyword-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    /* ===== 主内容区 ===== */
+    .main-content {
+      flex: 1;
+      margin-left: 240px;
+      padding: 0;
+    }
+
+    /* ===== 顶部Tab ===== */
+    .top-tabs {
+      display: flex;
+      background: rgba(255,255,255,0.8);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .top-tab {
+      padding: 16px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .top-tab:hover {
+      color: var(--text-primary);
+    }
+
+    .top-tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      font-weight: 600;
+    }
+
+    /* ===== 搜索栏 ===== */
+    .search-bar {
+      background: rgba(255,255,255,0.6);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .search-input-wrapper {
+      flex: 1;
+      min-width: 300px;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 10px 16px 10px 40px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      background: white;
+      transition: all 0.2s;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+    }
+
+    .filter-btn {
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: white;
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .filter-btn .count {
+      background: var(--primary);
+      color: white;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+
+    .time-buttons {
+      display: flex;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .time-btn {
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      transition: all 0.2s;
+    }
+
+    .time-btn:hover {
+      background: var(--primary-bg);
+    }
+
+    .time-btn.active {
+      background: var(--primary);
+      color: white;
+      font-weight: 500;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: white;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-light);
+      border-color: var(--primary-light);
+      color: white;
+    }
+
+    /* ===== 细分Pill栏 ===== */
+    .sub-pills {
+      padding: 12px 24px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      background: rgba(255,255,255,0.4);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sub-pill {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: white;
+      transition: all 0.2s;
+    }
+
+    .sub-pill:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .sub-pill.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      font-weight: 500;
+    }
+
+    /* ===== 仪表盘内容 ===== */
+    .dashboard-content {
+      padding: 24px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title::before {
+      content: '';
+      width: 4px;
+      height: 18px;
+      background: var(--primary);
+      border-radius: 2px;
+    }
+
+    .section-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    /* ===== 概览指标卡片 ===== */
+    .overview-cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .metric-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,0.8);
+      transition: all 0.3s;
+    }
+
+    .metric-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .metric-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .metric-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .metric-change {
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .metric-change.up { color: #10b981; }
+    .metric-change.down { color: #ef4444; }
+
+    .metric-sparkline {
+      height: 30px;
+      margin-top: 8px;
+    }
+
+    /* ===== 图表模块 ===== */
+    .chart-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .chart-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .chart-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,0.8);
+    }
+
+    .chart-card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .chart-container {
+      width: 100%;
+      height: 280px;
+    }
+
+    .chart-container-sm {
+      width: 100%;
+      height: 200px;
+    }
+
+    /* ===== 三大分类模块 ===== */
+    .category-modules {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .category-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,0.8);
+      border-top: 3px solid;
+    }
+
+    .category-card.pr { border-top-color: var(--pr); }
+    .category-card.affiliate { border-top-color: var(--affiliate); }
+    .category-card.social { border-top-color: var(--social); }
+
+    .category-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .category-name {
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .category-count {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .category-metrics {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .category-metric {
+      text-align: center;
+      padding: 10px;
+      background: #f8fafc;
+      border-radius: 8px;
+    }
+
+    .category-metric-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .category-metric-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .top-list {
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    .top-item {
+      padding: 10px 0;
+      border-bottom: 1px solid #f1f5f9;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .top-item:last-child {
+      border-bottom: none;
+    }
+
+    .top-item:hover {
+      background: #f8fafc;
+      margin: 0 -8px;
+      padding-left: 8px;
+      padding-right: 8px;
+      border-radius: 6px;
+    }
+
+    .top-item-title {
+      font-size: 13px;
+      color: var(--text-primary);
+      font-weight: 500;
+      margin-bottom: 6px;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .top-item-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* ===== 平台数据卡 ===== */
+    .platform-cards {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .platform-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px 12px;
+      text-align: center;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,0.8);
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+
+    .platform-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .platform-icon {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .platform-name {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .platform-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    /* ===== 品牌健康指数 ===== */
+    .health-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .health-score {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .health-score-value {
+      font-size: 48px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .health-score-label {
+      font-size: 13px;
+      opacity: 0.9;
+      margin-top: 4px;
+    }
+
+    .health-dimensions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .health-dim {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+
+    .health-dim-bar {
+      flex: 1;
+      height: 6px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 3px;
+      margin: 0 12px;
+      overflow: hidden;
+    }
+
+    .health-dim-fill {
+      height: 100%;
+      background: white;
+      border-radius: 3px;
+    }
+
+    /* ===== 热门话题 ===== */
+    .topic-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .topic-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .topic-item:hover {
+      background: #f8fafc;
+    }
+
+    .topic-rank {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .topic-rank.top1 { background: #fef3c7; color: #d97706; }
+    .topic-rank.top2 { background: #e0e7ff; color: #6366f1; }
+    .topic-rank.top3 { background: #fce7f3; color: #ec4899; }
+
+    .topic-name {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .topic-count {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* ===== 地理分布 ===== */
+    .geo-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .geo-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .geo-flag {
+      font-size: 20px;
+      width: 30px;
+    }
+
+    .geo-info {
+      flex: 1;
+    }
+
+    .geo-name {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .geo-bar {
+      height: 6px;
+      background: #f1f5f9;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .geo-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--pr));
+      border-radius: 3px;
+    }
+
+    .geo-value {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 600;
+      width: 50px;
+      text-align: right;
+    }
+
+    /* ===== AI洞察 ===== */
+    .insight-cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .insight-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      border-left: 4px solid;
+    }
+
+    .insight-card.growth { border-left-color: #10b981; }
+    .insight-card.risk { border-left-color: #ef4444; }
+    .insight-card.insight { border-left-color: #6366f1; }
+    .insight-card.opportunity { border-left-color: #f59e0b; }
+
+    .insight-icon {
+      font-size: 24px;
+      margin-bottom: 12px;
+    }
+
+    .insight-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .insight-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* ===== 热门内容表格 ===== */
+    .content-table-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    .table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .table-title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .table-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .table-search {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      width: 200px;
+    }
+
+    .table-search:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .content-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .content-table th {
+      text-align: left;
+      padding: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid var(--border);
+      background: #f8fafc;
+    }
+
+    .content-table td {
+      padding: 12px;
+      font-size: 13px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .content-table tr:hover {
+      background: #f8fafc;
+    }
+
+    .rank-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .rank-num.top3 {
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      color: white;
+    }
+
+    .platform-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+      background: #f1f5f9;
+      color: var(--text-secondary);
+    }
+
+    .category-tag {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .category-tag.pr { background: var(--pr-bg); color: var(--pr); }
+    .category-tag.affiliate { background: var(--affiliate-bg); color: var(--affiliate); }
+    .category-tag.social { background: var(--social-bg); color: var(--social); }
+
+    .sentiment-tag {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .sentiment-tag.positive { background: #d1fae5; color: #059669; }
+    .sentiment-tag.neutral { background: #f1f5f9; color: #64748b; }
+    .sentiment-tag.negative { background: #fee2e2; color: #dc2626; }
+
+    .num {
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ===== 加载状态 ===== */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-muted);
+    }
+
+    /* ===== 响应式 ===== */
+    @media (max-width: 1400px) {
+      .platform-cards { grid-template-columns: repeat(4, 1fr); }
+      .insight-cards { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 1200px) {
+      .overview-cards { grid-template-columns: repeat(2, 1fr); }
+      .chart-row { grid-template-columns: 1fr; }
+      .chart-row-2 { grid-template-columns: 1fr; }
+      .category-modules { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main-content { margin-left: 0; }
+      .overview-cards { grid-template-columns: 1fr; }
+      .platform-cards { grid-template-columns: repeat(2, 1fr); }
+      .insight-cards { grid-template-columns: 1fr; }
+    }
+
+    /* ===== 滚动条 ===== */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
 </head>
 <body>
-  <div class="app">
+  <div class="app-container">
     <!-- 侧边栏 -->
     <aside class="sidebar">
-      <div class="logo">
-        <span class="logo-icon">📊</span>
-        <span class="logo-text">品牌监测</span>
-      </div>
-      
-      <div class="sidebar-section">
-        <div class="section-title">监控项目</div>
-        <div class="project-list">
-          <div class="project-item active">
-            <span class="project-name">Mammotion 品牌</span>
-            <span class="project-status"></span>
-          </div>
-          <div class="project-item">
-            <span class="project-name">LUBA 系列</span>
-            <span class="project-status"></span>
-          </div>
-          <div class="project-item">
-            <span class="project-name">竞品监测</span>
-            <span class="project-status"></span>
-          </div>
+      <div class="sidebar-logo">
+        <div class="logo-icon">BM</div>
+        <div class="logo-text">
+          <h1>品牌监测</h1>
+          <p>Brand Monitor</p>
         </div>
-        <button class="btn-add-project">+ 新建项目</button>
       </div>
 
       <div class="sidebar-section">
-        <div class="section-title">快捷关键词</div>
-        <div class="quick-keywords">
-          <span class="kw-tag">Mammotion</span>
-          <span class="kw-tag">LUBA</span>
-          <span class="kw-tag">YUKA</span>
-          <span class="kw-tag">割草机器人</span>
-          <span class="kw-tag">robot mower</span>
+        <div class="project-tabs">
+          <div class="project-tab active">单项目</div>
+          <div class="project-tab">竞品对比</div>
+        </div>
+        <div class="sidebar-section-title">监控项目</div>
+        <div class="project-item active">
+          <div class="project-item-name">
+            <span class="project-status"></span>
+            Mammotion 品牌
+          </div>
+        </div>
+        <div class="project-item">
+          <div class="project-item-name">
+            <span class="project-status"></span>
+            LUBA 系列
+          </div>
+        </div>
+        <div class="project-item">
+          <div class="project-item-name">
+            <span class="project-status"></span>
+            竞品监测
+          </div>
+        </div>
+        <button class="add-project-btn">+ 新建项目</button>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">当前项目关键词</div>
+        <div class="keyword-list">
+          <div class="keyword-tag">Mammotion</div>
+          <div class="keyword-tag">LUBA</div>
+          <div class="keyword-tag">YUKA</div>
+          <button class="add-keyword-btn">+</button>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">快捷关键词</div>
+        <div class="keyword-list">
+          <div class="keyword-tag">割草机器人</div>
+          <div class="keyword-tag">robot mower</div>
+          <div class="keyword-tag">smart lawn</div>
+          <div class="keyword-tag">Husqvarna</div>
+          <div class="keyword-tag">Worx</div>
         </div>
       </div>
     </aside>
 
     <!-- 主内容区 -->
-    <main class="main">
-      <!-- 顶部搜索区 -->
-      <header class="search-bar">
-        <div class="search-input-wrap">
-          <input type="text" id="keywordInput" placeholder="输入关键词，逗号分隔多个..." value="Mammotion">
-          <button id="searchBtn" class="btn-primary">开始监控</button>
+    <main class="main-content">
+      <!-- 顶部Tab -->
+      <div class="top-tabs">
+        <div class="top-tab active" data-tab="overview">
+          <span>📊</span> 全渠道总览
         </div>
-        
-        <div class="filter-row">
-          <div class="filter-group">
-            <label>渠道</label>
-            <div class="platform-chips">
-              <span class="chip active" data-platform="all">全部</span>
-              <span class="chip" data-platform="news">📰 新闻</span>
-              <span class="chip" data-platform="affiliate_site">🛒 联盟</span>
-              <span class="chip" data-platform="forum">💬 论坛</span>
-              <span class="chip" data-platform="youtube">▶️ YT</span>
-              <span class="chip" data-platform="tiktok">🎵 TT</span>
-              <span class="chip" data-platform="instagram">📷 IG</span>
-              <span class="chip" data-platform="facebook">📘 FB</span>
-              <span class="chip" data-platform="twitter">🐦 X</span>
-            </div>
-          </div>
-          
-          <div class="filter-group">
-            <label>时间</label>
-            <select id="timeRange">
-              <option value="7">近7天</option>
-              <option value="30" selected>近30天</option>
-              <option value="90">近90天</option>
-            </select>
-          </div>
+        <div class="top-tab" data-tab="pr">
+          <span>📰</span> PR媒体
+        </div>
+        <div class="top-tab" data-tab="affiliate">
+          <span>🛒</span> 联盟营销
+        </div>
+        <div class="top-tab" data-tab="influencer">
+          <span>🎬</span> 红人内容
+        </div>
+        <div class="top-tab" data-tab="social">
+          <span>💬</span> 社交舆情
+        </div>
+      </div>
 
-          <div class="filter-group">
-            <label>分类</label>
-            <select id="categoryFilter">
-              <option value="all">全部分类</option>
-              <option value="pr">PR公关</option>
-              <option value="affiliate">联盟营销</option>
-              <option value="social">社媒内容</option>
-            </select>
-          </div>
+      <!-- 搜索栏 -->
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" id="keywordInput" placeholder="输入关键词，按回车或逗号添加..." value="Mammotion">
         </div>
-      </header>
+        <button class="filter-btn">
+          <span>🌐</span> 渠道 <span class="count">8</span>
+        </button>
+        <button class="filter-btn">
+          <span>📍</span> 地区 <span class="count">全部</span>
+        </button>
+        <div class="time-buttons">
+          <button class="time-btn active" data-days="7">7天</button>
+          <button class="time-btn" data-days="30">30天</button>
+          <button class="time-btn" data-days="90">90天</button>
+          <button class="time-btn">自定义</button>
+        </div>
+        <div class="action-buttons">
+          <button class="btn" id="refreshBtn">🔄 刷新</button>
+          <button class="btn">💾 保存</button>
+          <button class="btn">📥 导出 ▾</button>
+          <button class="btn btn-primary" id="searchBtn">🔍 开始监控</button>
+        </div>
+      </div>
+
+      <!-- 细分Pill栏 -->
+      <div class="sub-pills">
+        <div class="sub-pill active">全部</div>
+        <div class="sub-pill">PR类</div>
+        <div class="sub-pill">联盟类</div>
+        <div class="sub-pill">社媒类</div>
+      </div>
 
       <!-- 仪表盘内容 -->
-      <div class="dashboard">
-        <!-- 概览指标卡 -->
-        <div class="overview-cards">
-          <div class="metric-card">
-            <div class="metric-label">总提及量</div>
-            <div class="metric-value" id="totalMentions">--</div>
-            <div class="metric-trend up">↑ 12.5%</div>
-            <div class="metric-sparkline" id="sparkline1"></div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-label">总浏览量</div>
-            <div class="metric-value" id="totalViews">--</div>
-            <div class="metric-trend up">↑ 23.1%</div>
-            <div class="metric-sparkline" id="sparkline2"></div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-label">总互动量</div>
-            <div class="metric-value" id="totalEngagements">--</div>
-            <div class="metric-trend down">↓ 3.2%</div>
-            <div class="metric-sparkline" id="sparkline3"></div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-label">互动率</div>
-            <div class="metric-value" id="engagementRate">--</div>
-            <div class="metric-trend up">↑ 1.8%</div>
-            <div class="metric-sparkline" id="sparkline4"></div>
-          </div>
-        </div>
-
-        <!-- 图表区 -->
-        <div class="charts-row">
-          <div class="chart-card wide">
-            <div class="card-title">📈 提及量趋势</div>
-            <div class="chart-container" id="trendChart"></div>
-          </div>
-        </div>
-
-        <div class="charts-row">
-          <div class="chart-card">
-            <div class="card-title">🥧 渠道分布</div>
-            <div class="chart-container" id="platformChart"></div>
-          </div>
-          <div class="chart-card">
-            <div class="card-title">😊 情感分析</div>
-            <div class="chart-container" id="sentimentChart"></div>
-          </div>
-          <div class="chart-card">
-            <div class="card-title">📊 分类构成</div>
-            <div class="chart-container" id="categoryChart"></div>
-          </div>
-        </div>
-
-        <!-- 三大分类模块 -->
-        <div class="category-modules">
-          <div class="category-module" id="prModule">
-            <div class="category-header pr">
-              <span class="category-icon">📰</span>
-              <span class="category-name">PR公关</span>
-              <span class="category-count" id="prCount">0 条</span>
-            </div>
-            <div class="category-stats">
-              <div class="cat-stat">
-                <div class="cat-stat-value" id="prViews">0</div>
-                <div class="cat-stat-label">浏览量</div>
-              </div>
-              <div class="cat-stat">
-                <div class="cat-stat-value" id="prEngagements">0</div>
-                <div class="cat-stat-label">互动量</div>
-              </div>
-            </div>
-            <div class="category-top-list" id="prTopList">
-              <div class="empty-tip">暂无数据</div>
-            </div>
-          </div>
-
-          <div class="category-module" id="affiliateModule">
-            <div class="category-header affiliate">
-              <span class="category-icon">🛒</span>
-              <span class="category-name">联盟营销</span>
-              <span class="category-count" id="affiliateCount">0 条</span>
-            </div>
-            <div class="category-stats">
-              <div class="cat-stat">
-                <div class="cat-stat-value" id="affiliateViews">0</div>
-                <div class="cat-stat-label">浏览量</div>
-              </div>
-              <div class="cat-stat">
-                <div class="cat-stat-value" id="affiliateEngagements">0</div>
-                <div class="cat-stat-label">互动量</div>
-              </div>
-            </div>
-            <div class="category-top-list" id="affiliateTopList">
-              <div class="empty-tip">暂无数据</div>
-            </div>
-          </div>
-
-          <div class="category-module" id="socialModule">
-            <div class="category-header social">
-              <span class="category-icon">💬</span>
-              <span class="category-name">社媒内容</span>
-              <span class="category-count" id="socialCount">0 条</span>
-            </div>
-            <div class="category-stats">
-              <div class="cat-stat">
-                <div class="cat-stat-value" id="socialViews">0</div>
-                <div class="cat-stat-label">浏览量</div>
-              </div>
-              <div class="cat-stat">
-                <div class="cat-stat-value" id="socialEngagements">0</div>
-                <div class="cat-stat-label">互动量</div>
-              </div>
-            </div>
-            <div class="category-top-list" id="socialTopList">
-              <div class="empty-tip">暂无数据</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 热门内容排行 -->
-        <div class="content-table-card">
-          <div class="card-title">🔥 热门内容排行</div>
-          <div class="table-controls">
-            <input type="text" id="tableSearch" placeholder="搜索内容..." class="table-search">
-            <select id="tableSort">
-              <option value="engagements">按互动量</option>
-              <option value="views">按浏览量</option>
-              <option value="time">按时间</option>
-            </select>
-          </div>
-          <div class="table-wrap">
-            <table class="content-table">
-              <thead>
-                <tr>
-                  <th>排名</th>
-                  <th>渠道</th>
-                  <th>标题</th>
-                  <th>分类</th>
-                  <th>国家</th>
-                  <th>情感</th>
-                  <th>浏览量</th>
-                  <th>互动量</th>
-                  <th>时间</th>
-                </tr>
-              </thead>
-              <tbody id="contentTableBody">
-                <tr><td colspan="9" class="loading">加载中...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+      <div class="dashboard-content" id="dashboardContent">
+        <div class="loading">⏳ 正在加载数据...</div>
       </div>
     </main>
   </div>
 
-  <script src="scripts/app.js"></script>
+  <script>
+    // ===== 全局状态 =====
+    const state = {
+      currentTab: 'overview',
+      keywords: 'Mammotion',
+      timeRange: 7,
+      data: null
+    };
+
+    // ===== 平台信息 =====
+    const PLATFORM_INFO = {
+      news: { name: '新闻媒体', icon: '📰', color: '#8b5cf6' },
+      affiliate_site: { name: '联盟导购', icon: '🛒', color: '#06b6d4' },
+      forum: { name: '社区论坛', icon: '💬', color: '#f59e0b' },
+      youtube: { name: 'YouTube', icon: '▶️', color: '#ff0000' },
+      tiktok: { name: 'TikTok', icon: '🎵', color: '#000000' },
+      instagram: { name: 'Instagram', icon: '📷', color: '#e4405f' },
+      facebook: { name: 'Facebook', icon: '📘', color: '#1877f2' },
+      twitter: { name: 'Twitter/X', icon: '🐦', color: '#1da1f2' }
+    };
+
+    const CATEGORY_INFO = {
+      pr: { name: 'PR公关', color: '#8b5cf6', icon: '📰' },
+      affiliate: { name: '联盟营销', color: '#06b6d4', icon: '🛒' },
+      social: { name: '社媒内容', color: '#ec4899', icon: '💬' }
+    };
+
+    // ===== 图表实例 =====
+    const charts = {};
+
+    // ===== 初始化 =====
+    document.addEventListener('DOMContentLoaded', () => {
+      bindEvents();
+      fetchData();
+    });
+
+    // ===== 事件绑定 =====
+    function bindEvents() {
+      // 顶部Tab
+      document.querySelectorAll('.top-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.top-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          state.currentTab = tab.dataset.tab;
+          renderDashboard();
+        });
+      });
+
+      // 时间按钮
+      document.querySelectorAll('.time-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (!btn.dataset.days) return;
+          document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          state.timeRange = parseInt(btn.dataset.days);
+          fetchData();
+        });
+      });
+
+      // 搜索按钮
+      document.getElementById('searchBtn').addEventListener('click', () => {
+        state.keywords = document.getElementById('keywordInput').value.trim();
+        fetchData();
+      });
+
+      document.getElementById('keywordInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          state.keywords = e.target.value.trim();
+          fetchData();
+        }
+      });
+
+      document.getElementById('refreshBtn').addEventListener('click', fetchData);
+    }
+
+    // ===== 获取数据 =====
+    async function fetchData() {
+      showLoading();
+      
+      try {
+        const params = new URLSearchParams({
+          keywords: state.keywords,
+          timeRange: state.timeRange
+        });
+
+        const response = await fetch(`/api/search?${params.toString()}`);
+        const result = await response.json();
+
+        if (result.success) {
+          state.data = result.data;
+          renderDashboard();
+        }
+      } catch (error) {
+        console.error('Fetch error:', error);
+        document.getElementById('dashboardContent').innerHTML = 
+          '<div class="loading">❌ 数据加载失败，请检查后端服务</div>';
+      }
+    }
+
+    function showLoading() {
+      document.getElementById('dashboardContent').innerHTML = 
+        '<div class="loading">⏳ 正在加载数据...</div>';
+    }
+
+    // ===== 渲染仪表盘 =====
+    function renderDashboard() {
+      if (!state.data) return;
+
+      const { stats, results } = state.data;
+      const container = document.getElementById('dashboardContent');
+
+      let html = '';
+
+      // 概览指标
+      html += `
+        <div class="section-title">概览指标</div>
+        <div class="section-desc">基于当前筛选条件的实时数据汇总</div>
+        <div class="overview-cards">
+          <div class="metric-card">
+            <div class="metric-label">总提及量 <span>📝</span></div>
+            <div class="metric-value">${stats.overview.totalMentions}</div>
+            <div class="metric-change up">↑ ${stats.overview.growthRate}% 较上期</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">总浏览量 <span>👁</span></div>
+            <div class="metric-value">${formatNumber(stats.overview.totalViews)}</div>
+            <div class="metric-change up">↑ 23.1% 较上期</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">总互动量 <span>💬</span></div>
+            <div class="metric-value">${formatNumber(stats.overview.totalEngagements)}</div>
+            <div class="metric-change up">↑ 18.5% 较上期</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">互动率 <span>📊</span></div>
+            <div class="metric-value">${stats.overview.engagementRate}%</div>
+            <div class="metric-change up">↑ 1.8% 较上期</div>
+          </div>
+        </div>
+      `;
+
+      // 趋势图 + 渠道分布 + 情感分析
+      html += `
+        <div class="chart-row">
+          <div class="chart-card">
+            <div class="chart-card-title">
+              <span>📈 ${state.timeRange}天提及量趋势</span>
+            </div>
+            <div class="chart-container" id="trendChart"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-title"><span>🥧 渠道分布</span></div>
+            <div class="chart-container" id="platformChart"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-title"><span>😊 情感分析</span></div>
+            <div class="chart-container" id="sentimentChart"></div>
+          </div>
+        </div>
+      `;
+
+      // 平台数据卡 + 品牌健康指数
+      html += `
+        <div class="section-title">平台数据</div>
+        <div class="section-desc">各渠道提及量分布与品牌健康指数</div>
+        <div style="display: grid; grid-template-columns: 1fr 200px; gap: 16px; margin-bottom: 24px;">
+          <div class="platform-cards" id="platformCards"></div>
+          <div class="health-card">
+            <div class="health-score">
+              <div class="health-score-value">${stats.healthIndex.score}</div>
+              <div class="health-score-label">品牌健康指数</div>
+            </div>
+            <div class="health-dimensions">
+              ${stats.healthIndex.dimensions.map(dim => `
+                <div class="health-dim">
+                  <span>${dim.name}</span>
+                  <div class="health-dim-bar">
+                    <div class="health-dim-fill" style="width: ${dim.score}%"></div>
+                  </div>
+                  <span>${dim.score}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+
+      // 三大分类模块
+      html += `
+        <div class="section-title">内容分类分析</div>
+        <div class="section-desc">PR公关、联盟营销、社媒内容三大维度</div>
+        <div class="category-modules">
+          <div class="category-card pr">
+            <div class="category-header">
+              <div class="category-name">📰 PR公关</div>
+              <div class="category-count">${stats.categoryStats.pr.count} 条</div>
+            </div>
+            <div class="category-metrics">
+              <div class="category-metric">
+                <div class="category-metric-value">${formatNumber(stats.categoryStats.pr.views)}</div>
+                <div class="category-metric-label">浏览量</div>
+              </div>
+              <div class="category-metric">
+                <div class="category-metric-value">${formatNumber(stats.categoryStats.pr.engagements)}</div>
+                <div class="category-metric-label">互动量</div>
+              </div>
+            </div>
+            <div class="top-list" id="prTopList"></div>
+          </div>
+          <div class="category-card affiliate">
+            <div class="category-header">
+              <div class="category-name">🛒 联盟营销</div>
+              <div class="category-count">${stats.categoryStats.affiliate.count} 条</div>
+            </div>
+            <div class="category-metrics">
+              <div class="category-metric">
+                <div class="category-metric-value">${formatNumber(stats.categoryStats.affiliate.views)}</div>
+                <div class="category-metric-label">浏览量</div>
+              </div>
+              <div class="category-metric">
+                <div class="category-metric-value">${formatNumber(stats.categoryStats.affiliate.engagements)}</div>
+                <div class="category-metric-label">互动量</div>
+              </div>
+            </div>
+            <div class="top-list" id="affiliateTopList"></div>
+          </div>
+          <div class="category-card social">
+            <div class="category-header">
+              <div class="category-name">💬 社媒内容</div>
+              <div class="category-count">${stats.categoryStats.social.count} 条</div>
+            </div>
+            <div class="category-metrics">
+              <div class="category-metric">
+                <div class="category-metric-value">${formatNumber(stats.categoryStats.social.views)}</div>
+                <div class="category-metric-label">浏览量</div>
+              </div>
+              <div class="category-metric">
+                <div class="category-metric-value">${formatNumber(stats.categoryStats.social.engagements)}</div>
+                <div class="category-metric-label">互动量</div>
+              </div>
+            </div>
+            <div class="top-list" id="socialTopList"></div>
+          </div>
+        </div>
+      `;
+
+      // 热门话题 + 地理分布
+      html += `
+        <div class="chart-row-2">
+          <div class="chart-card">
+            <div class="chart-card-title"><span>🔥 热门话题 Top10</span></div>
+            <div class="topic-list" id="topicList"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-title"><span>🌍 地理分布 Top5</span></div>
+            <div class="geo-list" id="geoList"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-title"><span>📊 分类构成</span></div>
+            <div class="chart-container-sm" id="categoryChart"></div>
+          </div>
+        </div>
+      `;
+
+      // AI洞察
+      html += `
+        <div class="section-title">AI 智能洞察</div>
+        <div class="section-desc">基于数据分析的自动化洞察与建议</div>
+        <div class="insight-cards">
+          ${stats.aiInsights.map(insight => `
+            <div class="insight-card ${insight.type}">
+              <div class="insight-icon">${insight.icon}</div>
+              <div class="insight-title">${insight.title}</div>
+              <div class="insight-desc">${insight.description}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      // 热门内容表格
+      html += `
+        <div class="content-table-card">
+          <div class="table-header">
+            <div class="table-title">🏆 热门内容排行榜</div>
+            <div class="table-actions">
+              <input type="text" class="table-search" id="tableSearch" placeholder="搜索内容...">
+            </div>
+          </div>
+          <table class="content-table">
+            <thead>
+              <tr>
+                <th>排名</th>
+                <th>平台</th>
+                <th>标题</th>
+                <th>分类</th>
+                <th>作者</th>
+                <th>情感</th>
+                <th>浏览量</th>
+                <th>互动量</th>
+                <th>时间</th>
+              </tr>
+            </thead>
+            <tbody id="contentTableBody">
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      container.innerHTML = html;
+
+      // 初始化图表
+      initCharts();
+      renderPlatformCards();
+      renderTopLists();
+      renderTopics();
+      renderGeo();
+      renderContentTable(results);
+
+      // 表格搜索
+      document.getElementById('tableSearch').addEventListener('input', (e) => {
+        const filtered = results.filter(r => 
+          r.title.toLowerCase().includes(e.target.value.toLowerCase()) ||
+          r.author.toLowerCase().includes(e.target.value.toLowerCase())
+        );
+        renderContentTable(filtered);
+      });
+    }
+
+    // ===== 初始化图表 =====
+    function initCharts() {
+      const { stats } = state.data;
+
+      // 趋势图
+      charts.trend = echarts.init(document.getElementById('trendChart'));
+      const dates = stats.trends.map(t => t.date.slice(5));
+      charts.trend.setOption({
+        tooltip: { trigger: 'axis', backgroundColor: 'rgba(255,255,255,0.95)', borderColor: '#e2e8f0', textStyle: { color: '#1e293b' } },
+        legend: { data: ['PR', '联盟', '社媒'], textStyle: { color: '#64748b', fontSize: 12 }, top: 0 },
+        grid: { left: '3%', right: '4%', bottom: '3%', top: '40px', containLabel: true },
+        xAxis: { type: 'category', boundaryGap: false, data: dates, axisLine: { lineStyle: { color: '#e2e8f0' } }, axisLabel: { color: '#94a3b8', fontSize: 11 } },
+        yAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } }, axisLabel: { color: '#94a3b8', fontSize: 11 } },
+        series: [
+          { name: 'PR', type: 'line', smooth: true, data: stats.trends.map(t => t.pr), itemStyle: { color: '#8b5cf6' }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(139, 92, 246, 0.3)' }, { offset: 1, color: 'rgba(139, 92, 246, 0.02)' }]) } },
+          { name: '联盟', type: 'line', smooth: true, data: stats.trends.map(t => t.affiliate), itemStyle: { color: '#06b6d4' }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(6, 182, 212, 0.3)' }, { offset: 1, color: 'rgba(6, 182, 212, 0.02)' }]) } },
+          { name: '社媒', type: 'line', smooth: true, data: stats.trends.map(t => t.social), itemStyle: { color: '#ec4899' }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(236, 72, 153, 0.3)' }, { offset: 1, color: 'rgba(236, 72, 153, 0.02)' }]) } }
+        ]
+      });
+
+      // 渠道分布饼图
+      charts.platform = echarts.init(document.getElementById('platformChart'));
+      const pieData = Object.entries(stats.platformStats).map(([key, val]) => ({
+        name: PLATFORM_INFO[key]?.name || key,
+        value: val.count,
+        itemStyle: { color: PLATFORM_INFO[key]?.color || '#94a3b8' }
+      }));
+      charts.platform.setOption({
+        tooltip: { trigger: 'item', backgroundColor: 'rgba(255,255,255,0.95)', borderColor: '#e2e8f0', textStyle: { color: '#1e293b' }, formatter: '{b}: {c} ({d}%)' },
+        legend: { orient: 'vertical', right: 10, top: 'center', textStyle: { color: '#64748b', fontSize: 11 } },
+        series: [{ type: 'pie', radius: ['45%', '70%'], center: ['35%', '50%'], avoidLabelOverlap: false, itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 }, label: { show: false }, emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } }, labelLine: { show: false }, data: pieData }]
+      });
+
+      // 情感分析仪表盘
+      charts.sentiment = echarts.init(document.getElementById('sentimentChart'));
+      charts.sentiment.setOption({
+        series: [{
+          type: 'gauge', startAngle: 90, endAngle: -270, pointer: { show: false },
+          progress: { show: true, overlap: false, roundCap: true, clip: false, itemStyle: { borderRadius: 10 } },
+          axisLine: { lineStyle: { width: 18, color: [[1, '#f1f5f9']] } },
+          splitLine: { show: false }, axisTick: { show: false }, axisLabel: { show: false },
+          data: [{
+            value: parseFloat(stats.sentiment.positive.percent),
+            name: '正面',
+            title: { offsetCenter: ['0%', '-20%'], fontSize: 12, color: '#64748b' },
+            detail: { offsetCenter: ['0%', '0%'], fontSize: 28, fontWeight: 'bold', color: '#10b981', formatter: '{value}%' },
+            itemStyle: { color: '#10b981' }
+          }]
+        }],
+        graphic: [{ type: 'text', left: 'center', bottom: 20, style: { text: `正面 ${stats.sentiment.positive.count} · 中性 ${stats.sentiment.neutral.count} · 负面 ${stats.sentiment.negative.count}`, fontSize: 11, fill: '#94a3b8' } }]
+      });
+
+      // 分类构成条形图
+      charts.category = echarts.init(document.getElementById('categoryChart'));
+      charts.category.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, backgroundColor: 'rgba(255,255,255,0.95)', borderColor: '#e2e8f0', textStyle: { color: '#1e293b' } },
+        grid: { left: '3%', right: '10%', bottom: '3%', top: '10px', containLabel: true },
+        xAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } }, axisLabel: { color: '#94a3b8', fontSize: 11 } },
+        yAxis: { type: 'category', data: ['PR公关', '联盟营销', '社媒内容'], axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: '#64748b', fontSize: 12 } },
+        series: [{
+          type: 'bar',
+          data: [
+            { value: stats.categoryStats.pr.count, itemStyle: { color: '#8b5cf6', borderRadius: [0, 6, 6, 0] } },
+            { value: stats.categoryStats.affiliate.count, itemStyle: { color: '#06b6d4', borderRadius: [0, 6, 6, 0] } },
+            { value: stats.categoryStats.social.count, itemStyle: { color: '#ec4899', borderRadius: [0, 6, 6, 0] } }
+          ],
+          barWidth: 20,
+          label: { show: true, position: 'right', color: '#64748b', fontSize: 12, fontWeight: 600 }
+        }]
+      });
+
+      // 响应式
+      window.addEventListener('resize', () => {
+        Object.values(charts).forEach(chart => chart && chart.resize());
+      });
+    }
+
+    // ===== 渲染平台数据卡 =====
+    function renderPlatformCards() {
+      const { stats } = state.data;
+      const container = document.getElementById('platformCards');
+      
+      let html = '';
+      Object.entries(stats.platformStats).forEach(([key, val]) => {
+        const info = PLATFORM_INFO[key] || { name: key, icon: '📄' };
+        html += `
+          <div class="platform-card">
+            <div class="platform-icon">${info.icon}</div>
+            <div class="platform-name">${info.name}</div>
+            <div class="platform-value">${val.count}</div>
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html;
+    }
+
+    // ===== 渲染Top列表 =====
+    function renderTopLists() {
+      const { stats } = state.data;
+      
+      ['pr', 'affiliate', 'social'].forEach(cat => {
+        const container = document.getElementById(`${cat}TopList`);
+        const items = stats.categoryStats[cat]?.top5 || [];
+        
+        if (items.length === 0) {
+          container.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px; font-size:12px;">暂无数据</div>';
+          return;
+        }
+
+        container.innerHTML = items.map(item => `
+          <div class="top-item">
+            <div class="top-item-title">${item.title}</div>
+            <div class="top-item-meta">
+              <span>${item.author}</span>
+              <span>👁 ${formatNumber(item.views)}</span>
+              <span>💬 ${formatNumber(item.likes + item.comments)}</span>
+            </div>
+          </div>
+        `).join('');
+      });
+    }
+
+    // ===== 渲染热门话题 =====
+    function renderTopics() {
+      const { stats } = state.data;
+      const container = document.getElementById('topicList');
+      const topics = stats.topTopics.slice(0, 10);
+
+      container.innerHTML = topics.map((topic, i) => `
+        <div class="topic-item">
+          <div class="topic-rank ${i < 3 ? 'top' + (i+1) : ''}">${i+1}</div>
+          <div class="topic-name">${topic.name}</div>
+          <div class="topic-count">${topic.count} 条</div>
+        </div>
+      `).join('');
+    }
+
+    // ===== 渲染地理分布 =====
+    function renderGeo() {
+      const { stats } = state.data;
+      const container = document.getElementById('geoList');
+      const geo = stats.geoDistribution.slice(0, 5);
+      const max = Math.max(...geo.map(g => g.count));
+
+      container.innerHTML = geo.map(item => `
+        <div class="geo-item">
+          <div class="geo-flag">${getCountryFlag(item.country)}</div>
+          <div class="geo-info">
+            <div class="geo-name">${item.countryName}</div>
+            <div class="geo-bar">
+              <div class="geo-bar-fill" style="width: ${(item.count/max)*100}%"></div>
+            </div>
+          </div>
+          <div class="geo-value">${item.count}</div>
+        </div>
+      `).join('');
+    }
+
+    // ===== 渲染内容表格 =====
+    function renderContentTable(results) {
+      const tbody = document.getElementById('contentTableBody');
+      
+      const sorted = [...results].sort((a, b) => {
+        const engA = a.likes + a.comments + a.shares;
+        const engB = b.likes + b.comments + b.shares;
+        return engB - engA;
+      });
+
+      tbody.innerHTML = sorted.slice(0, 50).map((item, index) => {
+        const platform = PLATFORM_INFO[item.platform] || { name: item.platform, icon: '📄' };
+        const totalEng = item.likes + item.comments + item.shares;
+        
+        return `
+          <tr>
+            <td><span class="rank-num ${index < 3 ? 'top3' : ''}">${index + 1}</span></td>
+            <td><span class="platform-badge">${platform.icon} ${platform.name}</span></td>
+            <td style="max-width: 300px;">
+              <div style="font-weight: 500; margin-bottom: 4px;">${item.title}</div>
+            </td>
+            <td><span class="category-tag ${item.category}">${CATEGORY_INFO[item.category]?.name || item.category}</span></td>
+            <td style="color: #64748b;">${item.author}</td>
+            <td><span class="sentiment-tag ${item.sentiment}">${getSentimentText(item.sentiment)}</span></td>
+            <td class="num">${formatNumber(item.views)}</td>
+            <td class="num">${formatNumber(totalEng)}</td>
+            <td style="color: #94a3b8; font-size: 12px;">${formatTime(item.publishTime)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // ===== 工具函数 =====
+    function formatNumber(num) {
+      if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+      if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+      return num.toLocaleString();
+    }
+
+    function getCountryFlag(countryCode) {
+      const flags = {
+        US: '🇺🇸', GB: '🇬🇧', DE: '🇩🇪', FR: '🇫🇷',
+        CA: '🇨🇦', AU: '🇦🇺', JP: '🇯🇵', SE: '🇸🇪',
+        NL: '🇳🇱', ES: '🇪🇸', IT: '🇮🇹', BR: '🇧🇷',
+        MX: '🇲🇽', IN: '🇮🇳', KR: '🇰🇷', SG: '🇸🇬',
+        CN: '🇨🇳', RU: '🇷🇺', ZA: '🇿🇦', AE: '🇦🇪'
+      };
+      return flags[countryCode] || '🏳️';
+    }
+
+    function getSentimentText(sentiment) {
+      const map = { positive: '正面', neutral: '中性', negative: '负面' };
+      return map[sentiment] || sentiment;
+    }
+
+    function formatTime(isoString) {
+      const date = new Date(isoString);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      
+      if (diffDays > 30) return date.toLocaleDateString('zh-CN');
+      if (diffDays > 0) return `${diffDays}天前`;
+      if (diffHours > 0) return `${diffHours}小时前`;
+      return '刚刚';
+    }
+  </script>
 </body>
 </html>
