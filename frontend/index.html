@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>品牌智能监测平台</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+  <div class="app">
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+      <div class="logo">
+        <span class="logo-icon">📊</span>
+        <span class="logo-text">品牌监测</span>
+      </div>
+      
+      <div class="sidebar-section">
+        <div class="section-title">监控项目</div>
+        <div class="project-list">
+          <div class="project-item active">
+            <span class="project-name">Mammotion 品牌</span>
+            <span class="project-status"></span>
+          </div>
+          <div class="project-item">
+            <span class="project-name">LUBA 系列</span>
+            <span class="project-status"></span>
+          </div>
+          <div class="project-item">
+            <span class="project-name">竞品监测</span>
+            <span class="project-status"></span>
+          </div>
+        </div>
+        <button class="btn-add-project">+ 新建项目</button>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-title">快捷关键词</div>
+        <div class="quick-keywords">
+          <span class="kw-tag">Mammotion</span>
+          <span class="kw-tag">LUBA</span>
+          <span class="kw-tag">YUKA</span>
+          <span class="kw-tag">割草机器人</span>
+          <span class="kw-tag">robot mower</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main">
+      <!-- 顶部搜索区 -->
+      <header class="search-bar">
+        <div class="search-input-wrap">
+          <input type="text" id="keywordInput" placeholder="输入关键词，逗号分隔多个..." value="Mammotion">
+          <button id="searchBtn" class="btn-primary">开始监控</button>
+        </div>
+        
+        <div class="filter-row">
+          <div class="filter-group">
+            <label>渠道</label>
+            <div class="platform-chips">
+              <span class="chip active" data-platform="all">全部</span>
+              <span class="chip" data-platform="news">📰 新闻</span>
+              <span class="chip" data-platform="affiliate_site">🛒 联盟</span>
+              <span class="chip" data-platform="forum">💬 论坛</span>
+              <span class="chip" data-platform="youtube">▶️ YT</span>
+              <span class="chip" data-platform="tiktok">🎵 TT</span>
+              <span class="chip" data-platform="instagram">📷 IG</span>
+              <span class="chip" data-platform="facebook">📘 FB</span>
+              <span class="chip" data-platform="twitter">🐦 X</span>
+            </div>
+          </div>
+          
+          <div class="filter-group">
+            <label>时间</label>
+            <select id="timeRange">
+              <option value="7">近7天</option>
+              <option value="30" selected>近30天</option>
+              <option value="90">近90天</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label>分类</label>
+            <select id="categoryFilter">
+              <option value="all">全部分类</option>
+              <option value="pr">PR公关</option>
+              <option value="affiliate">联盟营销</option>
+              <option value="social">社媒内容</option>
+            </select>
+          </div>
+        </div>
+      </header>
+
+      <!-- 仪表盘内容 -->
+      <div class="dashboard">
+        <!-- 概览指标卡 -->
+        <div class="overview-cards">
+          <div class="metric-card">
+            <div class="metric-label">总提及量</div>
+            <div class="metric-value" id="totalMentions">--</div>
+            <div class="metric-trend up">↑ 12.5%</div>
+            <div class="metric-sparkline" id="sparkline1"></div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">总浏览量</div>
+            <div class="metric-value" id="totalViews">--</div>
+            <div class="metric-trend up">↑ 23.1%</div>
+            <div class="metric-sparkline" id="sparkline2"></div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">总互动量</div>
+            <div class="metric-value" id="totalEngagements">--</div>
+            <div class="metric-trend down">↓ 3.2%</div>
+            <div class="metric-sparkline" id="sparkline3"></div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">互动率</div>
+            <div class="metric-value" id="engagementRate">--</div>
+            <div class="metric-trend up">↑ 1.8%</div>
+            <div class="metric-sparkline" id="sparkline4"></div>
+          </div>
+        </div>
+
+        <!-- 图表区 -->
+        <div class="charts-row">
+          <div class="chart-card wide">
+            <div class="card-title">📈 提及量趋势</div>
+            <div class="chart-container" id="trendChart"></div>
+          </div>
+        </div>
+
+        <div class="charts-row">
+          <div class="chart-card">
+            <div class="card-title">🥧 渠道分布</div>
+            <div class="chart-container" id="platformChart"></div>
+          </div>
+          <div class="chart-card">
+            <div class="card-title">😊 情感分析</div>
+            <div class="chart-container" id="sentimentChart"></div>
+          </div>
+          <div class="chart-card">
+            <div class="card-title">📊 分类构成</div>
+            <div class="chart-container" id="categoryChart"></div>
+          </div>
+        </div>
+
+        <!-- 三大分类模块 -->
+        <div class="category-modules">
+          <div class="category-module" id="prModule">
+            <div class="category-header pr">
+              <span class="category-icon">📰</span>
+              <span class="category-name">PR公关</span>
+              <span class="category-count" id="prCount">0 条</span>
+            </div>
+            <div class="category-stats">
+              <div class="cat-stat">
+                <div class="cat-stat-value" id="prViews">0</div>
+                <div class="cat-stat-label">浏览量</div>
+              </div>
+              <div class="cat-stat">
+                <div class="cat-stat-value" id="prEngagements">0</div>
+                <div class="cat-stat-label">互动量</div>
+              </div>
+            </div>
+            <div class="category-top-list" id="prTopList">
+              <div class="empty-tip">暂无数据</div>
+            </div>
+          </div>
+
+          <div class="category-module" id="affiliateModule">
+            <div class="category-header affiliate">
+              <span class="category-icon">🛒</span>
+              <span class="category-name">联盟营销</span>
+              <span class="category-count" id="affiliateCount">0 条</span>
+            </div>
+            <div class="category-stats">
+              <div class="cat-stat">
+                <div class="cat-stat-value" id="affiliateViews">0</div>
+                <div class="cat-stat-label">浏览量</div>
+              </div>
+              <div class="cat-stat">
+                <div class="cat-stat-value" id="affiliateEngagements">0</div>
+                <div class="cat-stat-label">互动量</div>
+              </div>
+            </div>
+            <div class="category-top-list" id="affiliateTopList">
+              <div class="empty-tip">暂无数据</div>
+            </div>
+          </div>
+
+          <div class="category-module" id="socialModule">
+            <div class="category-header social">
+              <span class="category-icon">💬</span>
+              <span class="category-name">社媒内容</span>
+              <span class="category-count" id="socialCount">0 条</span>
+            </div>
+            <div class="category-stats">
+              <div class="cat-stat">
+                <div class="cat-stat-value" id="socialViews">0</div>
+                <div class="cat-stat-label">浏览量</div>
+              </div>
+              <div class="cat-stat">
+                <div class="cat-stat-value" id="socialEngagements">0</div>
+                <div class="cat-stat-label">互动量</div>
+              </div>
+            </div>
+            <div class="category-top-list" id="socialTopList">
+              <div class="empty-tip">暂无数据</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 热门内容排行 -->
+        <div class="content-table-card">
+          <div class="card-title">🔥 热门内容排行</div>
+          <div class="table-controls">
+            <input type="text" id="tableSearch" placeholder="搜索内容..." class="table-search">
+            <select id="tableSort">
+              <option value="engagements">按互动量</option>
+              <option value="views">按浏览量</option>
+              <option value="time">按时间</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table class="content-table">
+              <thead>
+                <tr>
+                  <th>排名</th>
+                  <th>渠道</th>
+                  <th>标题</th>
+                  <th>分类</th>
+                  <th>国家</th>
+                  <th>情感</th>
+                  <th>浏览量</th>
+                  <th>互动量</th>
+                  <th>时间</th>
+                </tr>
+              </thead>
+              <tbody id="contentTableBody">
+                <tr><td colspan="9" class="loading">加载中...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="scripts/app.js"></script>
+</body>
+</html>

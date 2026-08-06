@@ -1,0 +1,25 @@
+{
+  "name": "brand-monitor-backend",
+  "version": "1.0.0",
+  "description": "品牌智能监测平台 - 后端服务",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node test/classifier.test.js"
+  },
+  "keywords": [
+    "brand-monitor",
+    "social-media",
+    "analytics",
+    "pr",
+    "affiliate"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {}
+}
