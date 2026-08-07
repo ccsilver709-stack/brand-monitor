@@ -3,8 +3,9 @@ const router = express.Router();
 const { classifyBatch } = require('../services/classifier');
 const { aggregate } = require('../services/aggregator');
 const { generateMockData } = require('../utils/mockData');
+const serpapi = require('../services/serpapi');
 
-// 缓存Mock数据（实际项目中应该从数据库或API获取）
+// Mock数据缓存
 let mockDataCache = null;
 
 function getMockData() {
@@ -12,6 +13,100 @@ function getMockData() {
     mockDataCache = classifyBatch(generateMockData());
   }
   return mockDataCache;
+}
+
+/**
+ * 将时间范围天数转换为 SerpAPI 的 qdr 参数
+ * 7天 → w, 30天 → m, 90天 → m3
+ */
+function getTimeRangeParam(days) {
+  if (!days) return null;
+  const d = parseInt(days);
+  if (isNaN(d)) return null;
+  if (d <= 1) return 'd';
+  if (d <= 7) return 'w';
+  if (d <= 30) return 'm';
+  if (d <= 90) return 'm3';
+  if (d <= 180) return 'm6';
+  return 'y';
+}
+
+/**
+ * 从真实API获取数据
+ */
+async function fetchRealData(keywords, platforms, countries, timeRange) {
+  const allResults = [];
+  const kwList = keywords.split(',').map(k => k.trim()).filter(Boolean);
+  const pList = platforms ? platforms.split(',').map(p => p.trim()).filter(Boolean) : ['news', 'web'];
+  const cList = countries ? countries.split(',').map(c => c.trim()).filter(Boolean) : ['US'];
+
+  const timeRangeParam = getTimeRangeParam(timeRange);
+  const country = cList[0]?.toLowerCase() || 'us';
+
+  // 根据平台选择搜索类型
+  const searchTasks = [];
+
+  // 新闻搜索
+  if (pList.includes('news')) {
+    searchTasks.push({
+      type: 'news',
+      fn: serpapi.searchNews,
+    });
+  }
+
+  // 网页搜索（覆盖联盟、论坛、博客等）
+  if (pList.includes('affiliate_site') || pList.includes('forum') || pList.includes('web')) {
+    searchTasks.push({
+      type: 'web',
+      fn: serpapi.searchWeb,
+    });
+  }
+
+  // 视频搜索（覆盖YouTube等）
+  if (pList.includes('youtube') || pList.includes('video')) {
+    searchTasks.push({
+      type: 'video',
+      fn: serpapi.searchVideos,
+    });
+  }
+
+  // 如果没有指定平台，默认搜新闻+网页
+  if (searchTasks.length === 0) {
+    searchTasks.push({ type: 'news', fn: serpapi.searchNews });
+    searchTasks.push({ type: 'web', fn: serpapi.searchWeb });
+  }
+
+  // 执行搜索（串行，避免触发限流）
+  for (const task of searchTasks) {
+    try {
+      const results = await serpapi.batchSearch(kwList, task.fn, {
+        country,
+        num: 20,
+        timeRange: timeRangeParam,
+      });
+
+      // 给结果加上正确的platform标识
+      results.forEach(item => {
+        if (task.type === 'news') {
+          item.platform = 'news';
+        } else if (task.type === 'video') {
+          item.platform = 'youtube';
+        } else {
+          // web类的交给分类引擎去判断
+          item.platform = 'web';
+        }
+      });
+
+      allResults.push(...results);
+    } catch (e) {
+      console.error(`Search task ${task.type} failed:`, e.message);
+    }
+  }
+
+  // 自动分类
+  const classified = classifyBatch(allResults);
+
+  return classified;
 }
 
 /**
@@ -30,8 +125,9 @@ function getMockData() {
  * - sentiment: 情感（positive/neutral/negative）
  * - page: 页码
  * - pageSize: 每页数量
+ * - useMock: 强制使用Mock数据（调试用）
  */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const {
       keywords = '',
@@ -39,17 +135,33 @@ router.get('/', (req, res) => {
       countries = '',
       category = '',
       subCategory = '',
-      timeRange = '7',
+      timeRange = '30',
       startDate = '',
       endDate = '',
       sentiment = '',
       page = 1,
-      pageSize = 50
+      pageSize = 50,
+      useMock = '',
     } = req.query;
 
-    let results = getMockData();
+    // ===== 1. 获取原始数据 =====
+    let results;
+    const useRealData = serpapi.isAvailable() && useMock !== 'true';
 
-    // ===== 1. 关键词筛选 =====
+    if (useRealData && keywords) {
+      console.log(`[SerpAPI] Searching for: ${keywords}`);
+      try {
+        results = await fetchRealData(keywords, platforms, countries, timeRange);
+        console.log(`[SerpAPI] Got ${results.length} results`);
+      } catch (e) {
+        console.error('[SerpAPI] Failed, falling back to mock:', e.message);
+        results = getMockData();
+      }
+    } else {
+      results = getMockData();
+    }
+
+    // ===== 2. 关键词筛选 =====
     if (keywords) {
       const kwList = keywords.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
       if (kwList.length > 0) {
@@ -60,7 +172,7 @@ router.get('/', (req, res) => {
       }
     }
 
-    // ===== 2. 平台/渠道筛选 =====
+    // ===== 3. 平台/渠道筛选 =====
     if (platforms) {
       const pList = platforms.split(',').map(p => p.trim()).filter(Boolean);
       if (pList.length > 0) {
@@ -68,7 +180,7 @@ router.get('/', (req, res) => {
       }
     }
 
-    // ===== 3. 国家筛选 =====
+    // ===== 4. 国家筛选 =====
     if (countries) {
       const cList = countries.split(',').map(c => c.trim()).filter(Boolean);
       if (cList.length > 0) {
@@ -76,22 +188,22 @@ router.get('/', (req, res) => {
       }
     }
 
-    // ===== 4. 分类筛选 =====
+    // ===== 5. 分类筛选 =====
     if (category && category !== 'all') {
       results = results.filter(r => r.category === category);
     }
 
-    // ===== 5. 细分类型筛选 =====
+    // ===== 6. 细分类型筛选 =====
     if (subCategory && subCategory !== 'all') {
       results = results.filter(r => r.subCategory === subCategory);
     }
 
-    // ===== 6. 情感筛选 =====
+    // ===== 7. 情感筛选 =====
     if (sentiment && sentiment !== 'all') {
       results = results.filter(r => r.sentiment === sentiment);
     }
 
-    // ===== 7. 时间范围筛选 =====
+    // ===== 8. 时间范围筛选 =====
     const now = new Date();
     let startTime = null;
     let endTime = now;
@@ -114,17 +226,17 @@ router.get('/', (req, res) => {
       });
     }
 
-    // ===== 8. 计算统计数据 =====
+    // ===== 9. 计算统计数据 =====
     const days = startTime ? Math.ceil((endTime - startTime) / (24 * 60 * 60 * 1000)) : 7;
     const stats = aggregate(results, { days });
 
-    // ===== 9. 分页 =====
+    // ===== 10. 分页 =====
     const pageNum = parseInt(page) || 1;
     const pageSizeNum = parseInt(pageSize) || 50;
     const startIndex = (pageNum - 1) * pageSizeNum;
     const paginatedResults = results.slice(startIndex, startIndex + pageSizeNum);
 
-    // ===== 10. 返回结果 =====
+    // ===== 11. 返回结果 =====
     res.json({
       success: true,
       data: {
@@ -133,6 +245,7 @@ router.get('/', (req, res) => {
         page: pageNum,
         pageSize: pageSizeNum,
         stats,
+        dataSource: useRealData ? 'serpapi' : 'mock',
         filters: {
           keywords: keywords ? keywords.split(',') : [],
           platforms: platforms ? platforms.split(',') : [],
@@ -142,16 +255,15 @@ router.get('/', (req, res) => {
           timeRange,
           startDate: startTime ? startTime.toISOString().split('T')[0] : null,
           endDate: endTime.toISOString().split('T')[0],
-          sentiment
-        }
-      }
+          sentiment,
+        },
+      },
     });
-
   } catch (error) {
     console.error('Search error:', error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -164,7 +276,9 @@ router.get('/health', (req, res) => {
   res.json({
     success: true,
     status: 'ok',
-    timestamp: new Date().toISOString()
+    serpapi: serpapi.isAvailable() ? 'configured' : 'not_configured',
+    cache: serpapi.getCacheStats(),
+    timestamp: new Date().toISOString(),
   });
 });
 

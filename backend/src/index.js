@@ -2,6 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 
+// 加载环境变量（从项目根目录的 .env 文件）
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
+
 const searchRouter = require('./routes/search');
 
 const app = express();
