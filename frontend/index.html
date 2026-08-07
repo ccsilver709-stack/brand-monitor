@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>品牌智能监测平台</title>
+  <title>品牌站外流量监测工具</title>
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -1266,10 +1266,10 @@
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="logo">
-        <div class="logo-icon">BM</div>
+        <div class="logo-icon">BTM</div>
         <div>
-          <div class="logo-text">品牌监测</div>
-          <div class="logo-sub">Brand Monitor Pro</div>
+          <div class="logo-text">站外流量监测</div>
+          <div class="logo-sub">Brand Traffic Monitor</div>
         </div>
       </div>
 
@@ -1588,7 +1588,7 @@
       platforms: ['news', 'affiliate_site', 'forum', 'youtube', 'tiktok', 'instagram', 'facebook', 'twitter'],
       countries: ['US', 'DE', 'UK', 'FR', 'SE'],
       projects: [
-        { id: 1, name: 'Mammotion 品牌监测', status: 'active', mentions: 39 },
+        { id: 1, name: 'Mammotion 站外流量监测', status: 'active', mentions: 39 },
         { id: 2, name: 'LUBA 产品线', status: 'active', mentions: 28 },
         { id: 3, name: '竞品分析', status: 'paused', mentions: 15 },
       ],
@@ -2458,7 +2458,7 @@
       const ws2 = XLSX.utils.aoa_to_sheet(summary_data);
       XLSX.utils.book_append_sheet(wb, ws2, '汇总统计');
 
-      XLSX.writeFile(wb, '品牌监测数据导出.xlsx');
+      XLSX.writeFile(wb, '站外流量监测数据导出.xlsx');
     }
 
     // ========== Utils ==========
