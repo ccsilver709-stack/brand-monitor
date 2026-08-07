@@ -3,7 +3,9 @@ const router = express.Router();
 const { classifyBatch } = require('../services/classifier');
 const { aggregate } = require('../services/aggregator');
 const { generateMockData } = require('../utils/mockData');
-const serpapi = require('../services/serpapi');
+const googleNewsRSS = require('../services/googleNewsRSS');
+const youtube = require('../services/youtube');
+const reddit = require('../services/reddit');
 
 // Mock数据缓存
 let mockDataCache = null;
@@ -16,91 +18,104 @@ function getMockData() {
 }
 
 /**
- * 将时间范围天数转换为 SerpAPI 的 qdr 参数
- * 7天 → w, 30天 → m, 90天 → m3
+ * 将时间范围天数转换为各API的时间参数
  */
-function getTimeRangeParam(days) {
-  if (!days) return null;
+function getTimeParams(days) {
+  if (!days) return { googleNews: null, youtube: null, reddit: 'month' };
+  
   const d = parseInt(days);
-  if (isNaN(d)) return null;
-  if (d <= 1) return 'd';
-  if (d <= 7) return 'w';
-  if (d <= 30) return 'm';
-  if (d <= 90) return 'm3';
-  if (d <= 180) return 'm6';
-  return 'y';
+  if (isNaN(d)) return { googleNews: null, youtube: null, reddit: 'month' };
+
+  // Google News RSS: h(小时) d(天) w(周) m(月) y(年)
+  let googleNews = 'm';
+  if (d <= 1) googleNews = 'h';
+  else if (d <= 7) googleNews = 'w';
+  else if (d <= 30) googleNews = 'm';
+  else if (d <= 90) googleNews = 'm3';
+  else googleNews = 'y';
+
+  // YouTube: publishedAfter (ISO 8601)
+  const now = new Date();
+  const pastDate = new Date(now - d * 24 * 60 * 60 * 1000);
+  const youtubePublishedAfter = pastDate.toISOString();
+
+  // Reddit: hour/day/week/month/year/all
+  let reddit = 'month';
+  if (d <= 1) reddit = 'hour';
+  else if (d <= 7) reddit = 'day';
+  else if (d <= 30) reddit = 'month';
+  else if (d <= 365) reddit = 'year';
+  else reddit = 'all';
+
+  return { googleNews, youtubePublishedAfter, reddit };
 }
 
 /**
- * 从真实API获取数据
+ * 从真实API获取数据（多源合并）
  */
 async function fetchRealData(keywords, platforms, countries, timeRange) {
   const allResults = [];
   const kwList = keywords.split(',').map(k => k.trim()).filter(Boolean);
-  const pList = platforms ? platforms.split(',').map(p => p.trim()).filter(Boolean) : ['news', 'web'];
+  const pList = platforms ? platforms.split(',').map(p => p.trim()).filter(Boolean) : [];
   const cList = countries ? countries.split(',').map(c => c.trim()).filter(Boolean) : ['US'];
 
-  const timeRangeParam = getTimeRangeParam(timeRange);
-  const country = cList[0]?.toLowerCase() || 'us';
+  const country = cList[0] || 'US';
+  const timeParams = getTimeParams(timeRange);
 
-  // 根据平台选择搜索类型
-  const searchTasks = [];
-
-  // 新闻搜索
-  if (pList.includes('news')) {
-    searchTasks.push({
-      type: 'news',
-      fn: serpapi.searchNews,
-    });
-  }
-
-  // 网页搜索（覆盖联盟、论坛、博客等）
-  if (pList.includes('affiliate_site') || pList.includes('forum') || pList.includes('web')) {
-    searchTasks.push({
-      type: 'web',
-      fn: serpapi.searchWeb,
-    });
-  }
-
-  // 视频搜索（覆盖YouTube等）
-  if (pList.includes('youtube') || pList.includes('video')) {
-    searchTasks.push({
-      type: 'video',
-      fn: serpapi.searchVideos,
-    });
-  }
-
-  // 如果没有指定平台，默认搜新闻+网页
-  if (searchTasks.length === 0) {
-    searchTasks.push({ type: 'news', fn: serpapi.searchNews });
-    searchTasks.push({ type: 'web', fn: serpapi.searchWeb });
-  }
-
-  // 执行搜索（串行，避免触发限流）
-  for (const task of searchTasks) {
+  // ===== 1. Google News RSS（PR媒体）=====
+  // 不需要 API Key，永远可用
+  if (pList.length === 0 || pList.includes('news')) {
     try {
-      const results = await serpapi.batchSearch(kwList, task.fn, {
+      console.log('[Google News RSS] Searching...');
+      const results = await googleNewsRSS.batchSearch(kwList, {
         country,
-        num: 20,
-        timeRange: timeRangeParam,
+        language: 'en',
+        timeRange: timeParams.googleNews,
       });
-
-      // 给结果加上正确的platform标识
-      results.forEach(item => {
-        if (task.type === 'news') {
-          item.platform = 'news';
-        } else if (task.type === 'video') {
-          item.platform = 'youtube';
-        } else {
-          // web类的交给分类引擎去判断
-          item.platform = 'web';
-        }
-      });
-
+      console.log(`[Google News RSS] Got ${results.length} results`);
       allResults.push(...results);
     } catch (e) {
-      console.error(`Search task ${task.type} failed:`, e.message);
+      console.error('[Google News RSS] Failed:', e.message);
     }
+  }
+
+  // ===== 2. YouTube Data API（红人内容）=====
+  if (youtube.isAvailable() && (pList.length === 0 || pList.includes('youtube'))) {
+    try {
+      console.log('[YouTube API] Searching...');
+      const results = await youtube.batchSearch(kwList, {
+        country,
+        language: 'en',
+        maxResults: 20,
+        order: 'relevance',
+        publishedAfter: timeParams.youtubePublishedAfter,
+      });
+      console.log(`[YouTube API] Got ${results.length} results`);
+      allResults.push(...results);
+    } catch (e) {
+      console.error('[YouTube API] Failed:', e.message);
+    }
+  }
+
+  // ===== 3. Reddit API（社区/社媒）=====
+  if (reddit.isAvailable() && (pList.length === 0 || pList.includes('reddit') || pList.includes('forum'))) {
+    try {
+      console.log('[Reddit API] Searching...');
+      const results = await reddit.batchSearch(kwList, {
+        sort: 'relevance',
+        time: timeParams.reddit,
+        limit: 25,
+      });
+      console.log(`[Reddit API] Got ${results.length} results`);
+      allResults.push(...results);
+    } catch (e) {
+      console.error('[Reddit API] Failed:', e.message);
+    }
+  }
+
+  // 如果没有任何结果，返回空数组（前端会显示无数据）
+  if (allResults.length === 0) {
+    return [];
   }
 
   // 自动分类
@@ -146,15 +161,20 @@ router.get('/', async (req, res) => {
 
     // ===== 1. 获取原始数据 =====
     let results;
-    const useRealData = serpapi.isAvailable() && useMock !== 'true';
+    const hasRealDataSources = youtube.isAvailable() || reddit.isAvailable();
+    const useRealData = hasRealDataSources && useMock !== 'true' && keywords;
 
-    if (useRealData && keywords) {
-      console.log(`[SerpAPI] Searching for: ${keywords}`);
+    if (useRealData) {
+      console.log(`[Search] Using real data sources for: ${keywords}`);
       try {
         results = await fetchRealData(keywords, platforms, countries, timeRange);
-        console.log(`[SerpAPI] Got ${results.length} results`);
+        // 如果真实数据为空，fallback到Mock
+        if (results.length === 0) {
+          console.log('[Search] No real data, falling back to mock');
+          results = getMockData();
+        }
       } catch (e) {
-        console.error('[SerpAPI] Failed, falling back to mock:', e.message);
+        console.error('[Search] Real data failed, falling back to mock:', e.message);
         results = getMockData();
       }
     } else {
@@ -237,6 +257,12 @@ router.get('/', async (req, res) => {
     const paginatedResults = results.slice(startIndex, startIndex + pageSizeNum);
 
     // ===== 11. 返回结果 =====
+    // 数据源说明
+    const dataSources = [];
+    dataSources.push('google_news_rss'); // Google News RSS 永远可用
+    if (youtube.isAvailable()) dataSources.push('youtube_api');
+    if (reddit.isAvailable()) dataSources.push('reddit_api');
+
     res.json({
       success: true,
       data: {
@@ -245,7 +271,8 @@ router.get('/', async (req, res) => {
         page: pageNum,
         pageSize: pageSizeNum,
         stats,
-        dataSource: useRealData ? 'serpapi' : 'mock',
+        dataSource: useRealData ? 'real' : 'mock',
+        dataSources: dataSources,
         filters: {
           keywords: keywords ? keywords.split(',') : [],
           platforms: platforms ? platforms.split(',') : [],
@@ -276,8 +303,16 @@ router.get('/health', (req, res) => {
   res.json({
     success: true,
     status: 'ok',
-    serpapi: serpapi.isAvailable() ? 'configured' : 'not_configured',
-    cache: serpapi.getCacheStats(),
+    dataSources: {
+      googleNewsRSS: 'available', // 永远可用
+      youtube: youtube.isAvailable() ? 'configured' : 'not_configured',
+      reddit: reddit.isAvailable() ? 'configured' : 'not_configured',
+    },
+    cache: {
+      googleNewsRSS: googleNewsRSS.getCacheStats(),
+      youtube: youtube.getCacheStats(),
+      reddit: reddit.getCacheStats(),
+    },
     timestamp: new Date().toISOString(),
   });
 });
