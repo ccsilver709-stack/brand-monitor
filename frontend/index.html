@@ -305,8 +305,18 @@
       cursor: pointer;
       transition: all var(--transition);
       font-weight: 500;
+      border: 1px solid transparent;
     }
     .preset-tag:hover { background: #e0e7ff; color: #4f46e5; }
+    .preset-tag.active {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      color: #2563eb;
+    }
+    .preset-tag.active::after {
+      content: ' ✓';
+      font-size: 10px;
+    }
 
     /* Main area */
     .main-area {
@@ -1329,10 +1339,10 @@
 
       <!-- Sub tabs -->
       <div class="sub-tabs" id="subTabs">
-        <button class="sub-tab active" data-sub="all">全部</button>
-        <button class="sub-tab" data-sub="pr">PR类</button>
-        <button class="sub-tab" data-sub="affiliate">联盟类</button>
-        <button class="sub-tab" data-sub="social">社媒类</button>
+        <button class="sub-tab active" data-sub="all" onclick="switchSub('all')">全部</button>
+        <button class="sub-tab" data-sub="pr" onclick="switchSub('pr')">PR类</button>
+        <button class="sub-tab" data-sub="affiliate" onclick="switchSub('affiliate')">联盟类</button>
+        <button class="sub-tab" data-sub="social" onclick="switchSub('social')">社媒类</button>
       </div>
 
       <!-- Top bar -->
