@@ -6,6 +6,7 @@ const { generateMockData } = require('../utils/mockData');
 const googleNewsRSS = require('../services/googleNewsRSS');
 const youtube = require('../services/youtube');
 const reddit = require('../services/reddit');
+const googleCustomSearch = require('../services/googleCustomSearch');
 
 // Mock数据缓存
 let mockDataCache = null;
@@ -21,10 +22,10 @@ function getMockData() {
  * 将时间范围天数转换为各API的时间参数
  */
 function getTimeParams(days) {
-  if (!days) return { googleNews: null, youtube: null, reddit: 'month' };
+  if (!days) return { googleNews: null, youtube: null, reddit: 'month', gcs: null };
   
   const d = parseInt(days);
-  if (isNaN(d)) return { googleNews: null, youtube: null, reddit: 'month' };
+  if (isNaN(d)) return { googleNews: null, youtube: null, reddit: 'month', gcs: null };
 
   // Google News RSS: h(小时) d(天) w(周) m(月) y(年)
   let googleNews = 'm';
@@ -47,8 +48,27 @@ function getTimeParams(days) {
   else if (d <= 365) reddit = 'year';
   else reddit = 'all';
 
-  return { googleNews, youtubePublishedAfter, reddit };
+  // Google Custom Search: dateRestrict (d[number], w[number], m[number], y[number])
+  let gcs = null;
+  if (d <= 1) gcs = 'd1';
+  else if (d <= 7) gcs = 'w1';
+  else if (d <= 30) gcs = 'm1';
+  else if (d <= 90) gcs = 'm3';
+  else if (d <= 180) gcs = 'm6';
+  else if (d <= 365) gcs = 'y1';
+
+  return { googleNews, youtubePublishedAfter, reddit, gcs };
 }
+
+/**
+ * 站点搜索配置（用Google Custom Search搜特定社交平台）
+ */
+const SOCIAL_SITES = [
+  { site: 'tiktok.com', platform: 'tiktok' },
+  { site: 'instagram.com', platform: 'instagram' },
+  { site: 'facebook.com', platform: 'facebook' },
+  { site: 'twitter.com', platform: 'twitter' },
+];
 
 /**
  * 从真实API获取数据（多源合并）
@@ -113,6 +133,56 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
     }
   }
 
+  // ===== 4. Google Custom Search（Web类 + 社交站点搜索）=====
+  if (googleCustomSearch.isAvailable()) {
+    const gcsOptions = {
+      country,
+      num: 10,
+      dateRestrict: timeParams.gcs,
+    };
+
+    // 4a. 联盟营销 / 论坛 / 普通Web搜索
+    const needWebSearch = pList.length === 0 || 
+      pList.includes('affiliate_site') || 
+      pList.includes('forum') || 
+      pList.includes('web') ||
+      pList.includes('blog');
+
+    if (needWebSearch) {
+      try {
+        console.log('[Google Custom Search] Web search...');
+        const results = await googleCustomSearch.batchSearch(kwList, {
+          ...gcsOptions,
+          platform: 'web',
+        });
+        console.log(`[Google Custom Search] Got ${results.length} web results`);
+        allResults.push(...results);
+      } catch (e) {
+        console.error('[Google Custom Search] Web search failed:', e.message);
+      }
+    }
+
+    // 4b. 社交平台站点搜索（TikTok/Instagram/Facebook/Twitter）
+    const socialSitesToSearch = SOCIAL_SITES.filter(s => 
+      pList.length === 0 || pList.includes(s.platform)
+    );
+
+    if (socialSitesToSearch.length > 0) {
+      try {
+        console.log(`[Google Custom Search] Site search: ${socialSitesToSearch.map(s => s.platform).join(', ')}`);
+        const results = await googleCustomSearch.batchSearchSites(
+          kwList,
+          socialSitesToSearch,
+          gcsOptions
+        );
+        console.log(`[Google Custom Search] Got ${results.length} social site results`);
+        allResults.push(...results);
+      } catch (e) {
+        console.error('[Google Custom Search] Site search failed:', e.message);
+      }
+    }
+  }
+
   // 如果没有任何结果，返回空数组（前端会显示无数据）
   if (allResults.length === 0) {
     return [];
@@ -161,7 +231,12 @@ router.get('/', async (req, res) => {
 
     // ===== 1. 获取原始数据 =====
     let results;
-    const hasRealDataSources = youtube.isAvailable() || reddit.isAvailable();
+    const hasRealDataSources = 
+      youtube.isAvailable() || 
+      reddit.isAvailable() || 
+      googleCustomSearch.isAvailable();
+    
+    // Google News RSS 永远可用，但内容有限，主要还是看其他API
     const useRealData = hasRealDataSources && useMock !== 'true' && keywords;
 
     if (useRealData) {
@@ -262,6 +337,7 @@ router.get('/', async (req, res) => {
     dataSources.push('google_news_rss'); // Google News RSS 永远可用
     if (youtube.isAvailable()) dataSources.push('youtube_api');
     if (reddit.isAvailable()) dataSources.push('reddit_api');
+    if (googleCustomSearch.isAvailable()) dataSources.push('google_custom_search');
 
     res.json({
       success: true,
@@ -307,11 +383,13 @@ router.get('/health', (req, res) => {
       googleNewsRSS: 'available', // 永远可用
       youtube: youtube.isAvailable() ? 'configured' : 'not_configured',
       reddit: reddit.isAvailable() ? 'configured' : 'not_configured',
+      googleCustomSearch: googleCustomSearch.isAvailable() ? 'configured' : 'not_configured',
     },
     cache: {
       googleNewsRSS: googleNewsRSS.getCacheStats(),
       youtube: youtube.getCacheStats(),
       reddit: reddit.getCacheStats(),
+      googleCustomSearch: googleCustomSearch.getCacheStats(),
     },
     timestamp: new Date().toISOString(),
   });
