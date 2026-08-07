@@ -1,7 +1,7 @@
 {
-  "name": "brand-monitor-backend",
+  "name": "brand-traffic-monitor",
   "version": "1.0.0",
-  "description": "品牌智能监测平台 - 后端服务",
+  "description": "品牌站外流量监测工具 - 一站式出海品牌站外声量监测平台",
   "main": "backend/src/index.js",
   "scripts": {
     "start": "node backend/src/index.js",
@@ -10,10 +10,13 @@
   },
   "keywords": [
     "brand-monitor",
+    "traffic-monitor",
     "social-media",
     "analytics",
     "pr",
-    "affiliate"
+    "affiliate",
+    "d2c",
+    "cross-border"
   ],
   "author": "",
   "license": "MIT",

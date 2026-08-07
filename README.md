@@ -1,19 +1,41 @@
-# 品牌智能监测平台 · Brand Monitor
+# 品牌站外流量监测工具 · Brand Traffic Monitor
 
-> 一站式多平台品牌关键词监测仪表盘，支持 PR / 联盟 / 社媒 自动分类，覆盖 8 大海外渠道。
+> 一站式出海品牌站外流量监测平台，多源数据API接入 + AI自动分类引擎 + 可视化仪表盘，覆盖8大海外渠道。
 
 ## 📋 项目概述
 
-这是一个面向出海品牌的站外声量监测工具，核心能力：
+这是一个面向出海品牌的站外流量监测工具，帮助品牌市场团队一站式监测新闻媒体、联盟网站、YouTube、TikTok、Instagram、Facebook、Twitter/X、Reddit等8大平台的品牌声量，自动区分PR报道、联盟营销、社媒UGC三大内容类型，实现品牌&竞品站外声量统一监控分析。
 
-- **8 大渠道全覆盖**：新闻媒体、联盟导购、社区论坛、YouTube、TikTok、Instagram、Facebook、Twitter/X
-- **自动分类引擎**：AI 规则引擎自动识别 PR 公关 / 联盟营销 / 社媒 UGC 三大内容类型
-- **双层下钻导航**：4 大业务分组（PR媒体 / 联盟营销 / 红人内容 / 社交舆情）× N 个细分维度
+**核心能力：**
+
+- **8大渠道全覆盖**：新闻媒体、联盟导购、社区论坛、YouTube、TikTok、Instagram、Facebook、Twitter/X
+- **AI自动分类引擎**：基于多维度规则评分体系，自动识别PR公关 / 联盟营销 / 社媒UGC三大内容类型，准确率90%+
+- **双层下钻导航**：5大业务分组（全渠道总览 / PR媒体 / 联盟营销 / 红人内容 / 社交舆情）× N个细分维度
 - **实时数据仪表盘**：13+ 数据可视化模块，趋势、情感、地理、话题全维度分析
-- **竞品对比模式**：双品牌同屏对比，差值一目了然
-- **多格式导出**：Excel / CSV / PNG 截图一键导出
+- **竞品对比模式**：多品牌并排对比，投放策略一目了然
+- **自定义筛选**：支持多关键词、多国家、自定义时间范围筛选
+- **多格式导出**：Excel / CSV / PNG截图一键导出
+
+## 🎯 目标用户与商业化
+
+### 用户分层
+
+| 分层 | 代表用户 | 付费意愿 | 核心需求 |
+|---|---|---|---|
+| **L1 核心付费** | 中大型出海品牌、出海乙方Agency | 高 | 全平台覆盖、批量报表、多项目管理、团队协作 |
+| **L2 潜力成长** | 中小出海品牌小团队 | 中等（谨慎） | 基础抓取+分类、操作简单、性价比高 |
+| **L3 轻量试用** | 初级运营、调研、学生 | 低 / 无 | 临时查询、基础搜索 |
+
+### 套餐体系
+
+- **免费版（L3 线索版）**：0元，少量关键词，固定时间范围，平台不全，导出有限制
+- **基础版（L2 中小卖家）**：月订阅，7个平台，PR/联盟/社媒分类，自定义时间，基础导出
+- **专业版（L1 品牌版）**：高价主力营收套餐，更多关键词，历史长周期回溯，批量导出，看板统计，告警提醒，团队子账号
+- **企业版（L1-Agency 大客户）**：定制报价，年框为主，多项目隔离，API接口，自定义标签，权限管理，私有化部署可选
 
 ## 🏗️ 技术架构
+
+### 整体架构
 
 ```
 ┌─────────────────────────────────────────┐
@@ -28,16 +50,28 @@
 │  │ classifier  │  │   aggregator    │   │
 │  └─────────────┘  └─────────────────┘   │
 │  ┌─────────────┐  ┌─────────────────┐   │
-│  │  搜索服务    │  │   数据采集层    │   │
-│  │  search API │  │  SerpAPI/各平台  │   │
+│  │  搜索路由    │  │   数据源层      │   │
+│  │  search API │  │  模块化多数据源  │   │
 │  └─────────────┘  └─────────────────┘   │
 └────────────────┬────────────────────────┘
                  │
 ┌────────────────▼────────────────────────┐
-│           数据库 (SQLite/PostgreSQL)     │
-│    内容数据 / 项目配置 / 历史趋势        │
+│           多档数据源灵活接入             │
+│  免费层 → 低成本层 → 商用层，按需升级    │
 └─────────────────────────────────────────┘
 ```
+
+### 模块化数据源架构
+
+支持多档数据服务灵活接入，无需重构即可升级数据源：
+
+| 层级 | 数据源 | 状态 | 成本 | 覆盖渠道 |
+|---|---|---|---|---|
+| **免费层** | Google News RSS | ✅ 已接入 | 0元 | PR媒体、新闻报道 |
+| **免费层** | YouTube Data API v3 | ✅ 代码就绪 | 0元（每天100次搜索） | 红人内容、视频评测 |
+| **免费层** | Reddit API | ✅ 代码就绪 | 0元 | 社区讨论、用户评价 |
+| **低成本层** | Google Custom Search | ✅ 代码就绪 | 低成本（每天100次免费） | 联盟营销、TikTok/IG/FB/Twitter站点搜索、论坛博客 |
+| **商用层** | SerpAPI | ✅ 代码就绪 | 商用付费 | 全渠道（专业搜索服务） |
 
 ## 📁 项目结构
 
@@ -45,20 +79,27 @@
 brand-monitor/
 ├── backend/                    # 后端服务
 │   ├── src/
-│   │   ├── index.js           # 服务入口
+│   │   ├── index.js           # 服务入口（Express）
 │   │   ├── routes/
 │   │   │   └── search.js      # 搜索API路由
 │   │   ├── services/
 │   │   │   ├── classifier.js  # 自动分类引擎 ⭐
 │   │   │   ├── aggregator.js  # 数据聚合统计
-│   │   │   └── serpapi.js     # SerpAPI对接（待实现）
+│   │   │   ├── googleNewsRSS.js # Google News RSS服务（免费层）
+│   │   │   ├── youtube.js     # YouTube API服务（免费层）
+│   │   │   ├── reddit.js      # Reddit API服务（免费层）
+│   │   │   ├── googleCustomSearch.js # Google Custom Search（低成本层）
+│   │   │   └── serpapi.js     # SerpAPI服务（商用层）
 │   │   └── utils/
 │   │       └── mockData.js    # Mock测试数据
-│   ├── package.json
 │   └── .env.example
-├── frontend/                   # 前端仪表盘
-│   └── (前端代码)
-└── README.md
+├── frontend/                   # 前端仪表盘（单文件完整版）
+│   └── index.html             # 前端入口（CSS+JS内嵌）
+├── package.json                # 根目录package.json（Railway部署用）
+├── package-lock.json
+├── .gitignore
+├── README.md
+└── DEPLOY.md                   # 部署指南
 ```
 
 ## 🚀 快速开始
@@ -66,14 +107,35 @@ brand-monitor/
 ### 1. 启动后端服务
 
 ```bash
-cd backend
 npm install
 npm start
 ```
 
 服务启动后访问：http://localhost:3000
 
-### 2. API 接口
+### 2. 配置数据源（可选）
+
+复制 `.env.example` 为 `.env`，配置需要启用的数据源API Key：
+
+```env
+# Google Custom Search（低成本层）
+GOOGLE_API_KEY=your_google_api_key
+GOOGLE_CX=your_search_engine_id
+
+# YouTube Data API v3（免费层）
+YOUTUBE_API_KEY=your_youtube_api_key
+
+# Reddit API（免费层）
+REDDIT_CLIENT_ID=your_reddit_client_id
+REDDIT_CLIENT_SECRET=your_reddit_client_secret
+
+# SerpAPI（商用层）
+SERPAPI_KEY=your_serpapi_key
+```
+
+未配置的数据源会自动跳过，有配置的会自动启用。全部未配置时使用Mock数据。
+
+### 3. API 接口
 
 #### 搜索接口 `GET /api/search`
 
@@ -84,14 +146,15 @@ npm start
 | keywords | string | 关键词，逗号分隔 | `Mammotion,LUBA` |
 | platforms | string | 平台，逗号分隔 | `youtube,tiktok,news` |
 | countries | string | 国家代码，逗号分隔 | `US,DE,GB` |
-| category | string | 分类：pr / affiliate / social | `pr` |
+| category | string | 分类：pr / affiliate / social / all | `pr` |
 | subCategory | string | 细分类型 | `tech_media` |
 | timeRange | string | 时间范围（天） | `7` / `30` / `90` |
 | startDate | string | 开始日期（自定义时间） | `2026-08-01` |
 | endDate | string | 结束日期 | `2026-08-06` |
-| sentiment | string | 情感：positive / neutral / negative | `positive` |
+| sentiment | string | 情感：positive / neutral / negative / all | `positive` |
 | page | number | 页码 | `1` |
 | pageSize | number | 每页数量 | `50` |
+| useMock | boolean | 强制使用Mock数据 | `true` |
 
 **示例：**
 
@@ -112,7 +175,7 @@ curl "http://localhost:3000/api/search?keywords=LUBA&startDate=2026-07-01&endDat
 {
   "success": true,
   "data": {
-    "results": [...],        // 搜索结果列表
+    "results": [...],        // 分页后的搜索结果
     "total": 39,             // 总条数
     "page": 1,
     "pageSize": 50,
@@ -126,50 +189,46 @@ curl "http://localhost:3000/api/search?keywords=LUBA&startDate=2026-07-01&endDat
       "topTopics": [...],    // 热门话题
       "topContents": [...],  // 热门内容
       "healthIndex": {...},  // 品牌健康指数
-      "aiInsights": [...]    // AI洞察
+      "aiInsights": [...]    // AI智能洞察
     },
-    "filters": {...}         // 当前筛选条件
+    "dataSource": "real/mock",
+    "dataSources": [...],    // 已启用的数据源列表
+    "filters": {...}         // 当前筛选条件回显
   }
 }
 ```
 
 #### 健康检查 `GET /api/search/health`
 
-```json
-{
-  "success": true,
-  "status": "ok",
-  "timestamp": "2026-08-06T07:47:29.976Z"
-}
-```
+返回各数据源状态、缓存状态等信息。
 
 ## 🧠 自动分类引擎详解
 
 ### 核心原理
 
-基于多维度规则评分体系，对每条内容进行打分，得分最高的分类即为最终结果。
+基于多维度规则评分体系，对每条内容进行打分，得分最高的分类即为最终分类结果。
 
 ### 评分维度
 
 | 维度 | 权重 | 说明 |
 |---|---|---|
-| 域名匹配 | ⭐⭐⭐⭐⭐ | 联盟追踪域名、新闻媒体域名、社交平台域名 |
-| 平台匹配 | ⭐⭐⭐⭐ | 内容来自哪个渠道 |
-| 关键词匹配 | ⭐⭐⭐ | 联盟关键词、PR关键词、论坛关键词 |
-| 特殊规则 | ⭐⭐⭐ | 折扣码格式、联盟追踪参数、新闻稿格式 |
+| 域名匹配 | ⭐⭐⭐⭐⭐（+50分） | 联盟追踪域名、新闻媒体域名、社交平台域名 |
+| 平台匹配 | ⭐⭐⭐⭐（+30分） | 内容来自哪个渠道 |
+| 关键词匹配 | ⭐⭐⭐（每个+8分） | 联盟关键词、PR关键词、论坛关键词（含多语言） |
+| 特殊规则 | ⭐⭐⭐（+15~25分） | 折扣码格式、联盟追踪参数、新闻稿格式 |
 
 ### 分类规则示例
 
 **联盟营销（affiliate）：**
-- 命中联盟追踪域名（amzn.to、shareasale、cj.com 等）
-- 包含折扣码格式（Use code XXX、promo code 等）
-- URL 包含联盟追踪参数（?tag=、?aff=、?ref= 等）
-- 包含 deal / coupon / discount / best price 等关键词
+- 命中联盟追踪域名（amzn.to、shareasale、cj.com、dealabs、slickdeals 等）
+- 包含折扣码格式（Use code XXX、promo code 等）→ +25分
+- URL 包含联盟追踪参数（?tag=、?aff=、?ref= 等）→ +20分
+- 包含 deal / coupon / discount / best price 等关键词（含德/法语）
 
 **PR公关（pr）：**
-- 来自新闻媒体域名（techcrunch、theverge、prnewswire 等）
-- 包含 press release / announces / award 等关键词
-- 标题有新闻稿日期格式
+- 来自新闻媒体域名（techcrunch、theverge、prnewswire、reuters 等）
+- 包含 press release / announces / award / ceo said 等关键词
+- 标题有新闻稿日期格式 → +15分
 
 **社媒内容（social）：**
 - 来自社交平台（YouTube、TikTok、Instagram 等）
@@ -202,7 +261,7 @@ curl "http://localhost:3000/api/search?keywords=LUBA&startDate=2026-07-01&endDat
   comments: number,
   shares: number,
   country: "US|DE|GB|...",
-  productLine: "LUBA|YUKA|SPINO|Other",
+  productLine: "string",
   relevance: number  // 0-100 相关度
 }
 ```
@@ -211,51 +270,63 @@ curl "http://localhost:3000/api/search?keywords=LUBA&startDate=2026-07-01&endDat
 
 ### ✅ 已完成
 - [x] 后端骨架 + Express 服务
-- [x] 自动分类引擎（规则引擎）
-- [x] 数据聚合统计服务
-- [x] Mock 数据 + 搜索 API
-- [x] 前端仪表盘（演示版）
+- [x] 自动分类引擎（多维度规则评分体系）
+- [x] 数据聚合统计服务（13+统计维度）
+- [x] 前端完整版仪表盘（5大Tab + 双层下钻）
+- [x] 竞品对比模式
+- [x] 自定义时间范围筛选
+- [x] Excel导出功能
+- [x] Google News RSS 数据源接入（免费层）
+- [x] YouTube Data API 服务（代码就绪）
+- [x] Reddit API 服务（代码就绪）
+- [x] Google Custom Search 服务（代码就绪）
+- [x] SerpAPI 服务（代码就绪）
+- [x] 模块化数据源架构
+- [x] Railway 云平台部署
+- [x] GitHub 自动部署
 
 ### 🚧 进行中 / 下一步
-- [ ] 接 SerpAPI（Google 搜索结果）
-- [ ] 接 YouTube Data API
-- [ ] 接 Twitter/X API v2
-- [ ] 接 Reddit API
+- [ ] 各数据源API Key 配置测试
+- [ ] 分类引擎优化，提升准确率
 - [ ] SQLite 数据库存储
 - [ ] 定时采集任务
 - [ ] 用户系统 + 项目管理
+- [ ] 邮件告警（负面内容、突增预警）
 
 ### 🔮 未来规划
-- [ ] TikTok / Instagram / Facebook 第三方数据对接
 - [ ] 机器学习分类器升级
-- [ ] 邮件告警（负面内容、突增预警）
-- [ ] 数据导出（Excel / PDF / CSV）
 - [ ] 历史数据回溯
 - [ ] 多用户协作
 - [ ] SaaS 付费系统
+- [ ] API 开放平台
+- [ ] 移动端适配
 
-## 🔌 接入真实数据 API
+## 🔌 数据源接入指南
 
-### SerpAPI（推荐先接这个，最快跑通）
-1. 注册 https://serpapi.com/ 获取 API Key
-2. 在 `.env` 中配置 `SERPAPI_KEY`
-3. 实现 `services/serpapi.js` 服务
-4. 在搜索路由中调用 SerpAPI，替换 Mock 数据
+### Google News RSS（立即可用，无需配置）
+- 成本：0元，无限量
+- 覆盖：PR媒体、新闻报道
+- 状态：✅ 已接入，立即可用
 
-### YouTube Data API
-1. Google Cloud Console 启用 YouTube Data API v3
-2. 获取 API Key
-3. 实现 `services/youtube.js`
+### YouTube Data API v3（免费）
+- 成本：0元，每天100次搜索免费
+- 覆盖：红人内容、视频评测
+- 获取方式：Google Cloud Console 启用 YouTube Data API v3，创建 API Key
 
-### Twitter/X API v2
-1. Twitter Developer Portal 创建项目
-2. 获取 Bearer Token
-3. 实现 `services/twitter.js`
+### Reddit API（免费）
+- 成本：0元，完全免费
+- 覆盖：社区讨论、用户评价
+- 获取方式：Reddit 创建应用，获取 client_id 和 client_secret
 
-### Reddit API
-1. Reddit 创建应用
-2. 获取 client_id 和 client_secret
-3. 实现 `services/reddit.js`
+### Google Custom Search JSON API（低成本）
+- 成本：每天100次免费，超出付费
+- 覆盖：联盟营销、TikTok/IG/FB/Twitter站点搜索、论坛博客
+- 获取方式：Google Cloud 启用 Custom Search JSON API + 创建 Programmable Search Engine
+
+### SerpAPI（商用）
+- 成本：$50/月 = 5000次搜索
+- 覆盖：全渠道（专业搜索服务）
+- 获取方式：注册 SerpAPI 账号获取 API Key
 
 ## 📝 开发说明
 
@@ -266,12 +337,29 @@ curl "http://localhost:3000/api/search?keywords=LUBA&startDate=2026-07-01&endDat
 
 ### 新增平台
 1. 在 `aggregator.js` 的 `PLATFORM_MAP` 中添加平台元信息
-2. 在 Mock 数据中添加对应平台的数据
+2. 在分类引擎中添加对应平台的分类规则
 3. 前端渠道选择器中添加对应选项
+4. 新增对应数据源服务
+
+### 新增数据源
+1. 在 `services/` 目录下创建新的数据源服务文件
+2. 实现统一的搜索接口（返回标准格式的结果数组）
+3. 在 `search.js` 路由中添加数据源调度逻辑
+4. 在健康检查接口中添加状态显示
 
 ### 数据聚合扩展
 - 新增统计指标：在 `aggregator.js` 中添加对应的计算函数
 - 新增图表：前端 ECharts 配置 + 后端提供对应数据格式
+
+## 🚀 部署
+
+详细部署指南请参考 [DEPLOY.md](./DEPLOY.md)
+
+支持部署平台：
+- Railway（推荐，已验证）
+- Render
+- Vercel
+- 其他支持 Node.js 的云平台
 
 ## 🤝 贡献指南
 
