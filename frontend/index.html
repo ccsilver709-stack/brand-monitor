@@ -1340,7 +1340,7 @@
         <div class="search-box">
           <div class="search-input-wrapper">
             <span style="color: var(--text-muted);">🔍</span>
-            <input type="text" class="search-input" id="searchInput" placeholder="输入品牌关键词，逗号分隔..." value="Mammotion,LUBA,YUKA">
+            <input type="text" class="search-input" id="searchInput" placeholder="输入品牌关键词，逗号分隔，按回车搜索..." value="Mammotion,LUBA,YUKA" onkeydown="handleSearchKeydown(event)">
             <span class="search-clear" onclick="clearSearch()">✕</span>
           </div>
         </div>
@@ -1876,6 +1876,18 @@
 
     function clearSearch() {
       document.getElementById('searchInput').value = '';
+    }
+
+    function handleSearchKeydown(e) {
+      if (e.key === 'Enter') {
+        const input = document.getElementById('searchInput');
+        const keywords = input.value.split(',').map(k => k.trim()).filter(k => k);
+        if (keywords.length > 0) {
+          state.keywords = keywords;
+          renderKeywords();
+          fetchData();
+        }
+      }
     }
 
     function refreshData() {
