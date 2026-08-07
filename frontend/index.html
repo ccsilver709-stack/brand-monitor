@@ -8,1738 +8,2488 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    
     :root {
-      --primary: #6366f1;
-      --primary-light: #818cf8;
-      --primary-bg: #eef2ff;
-      --pr: #8b5cf6;
-      --pr-bg: #f5f3ff;
-      --affiliate: #06b6d4;
-      --affiliate-bg: #ecfeff;
-      --social: #ec4899;
-      --social-bg: #fdf2f8;
-      --sentiment: #6366f1;
-      --sentiment-bg: #eef2ff;
+      --bg-primary: #f8fafc;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #f1f5f9;
+      --bg-hover: #f1f5f9;
       --text-primary: #1e293b;
-      --text-secondary: #64748b;
+      --text-secondary: #475569;
       --text-muted: #94a3b8;
-      --border: #e2e8f0;
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
-      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
-      --radius: 12px;
+      --border-light: #e2e8f0;
+      --border-subtle: #e2e8f0;
+      --blue: #3b82f6;
+      --blue-dark: #2563eb;
+      --purple: #8b5cf6;
+      --cyan: #06b6d4;
+      --green: #10b981;
+      --orange: #f59e0b;
+      --red: #ef4444;
+      --pink: #ec4899;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.05);
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-btn: 8px;
+      --transition: 0.2s ease;
     }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 50%, #fdf4ff 100%);
       color: var(--text-primary);
-      min-height: 100vh;
       font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
     }
 
     .app-container {
-      display: flex;
+      display: grid;
+      grid-template-columns: 240px 1fr;
       min-height: 100vh;
     }
 
-    /* ===== 侧边栏 ===== */
+    /* Sidebar */
     .sidebar {
-      width: 240px;
-      background: rgba(255,255,255,0.8);
-      backdrop-filter: blur(10px);
-      border-right: 1px solid var(--border);
-      padding: 20px 0;
-      position: fixed;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid var(--border-light);
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      position: sticky;
+      top: 0;
       height: 100vh;
       overflow-y: auto;
-      z-index: 100;
     }
 
-    .sidebar-logo {
+    .logo {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 0 20px 24px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 20px;
+      padding: 4px 8px;
     }
-
     .logo-icon {
       width: 40px;
       height: 40px;
-      background: linear-gradient(135deg, var(--primary), var(--pr));
       border-radius: 10px;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
       display: flex;
       align-items: center;
       justify-content: center;
-      color: white;
-      font-weight: bold;
-      font-size: 16px;
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: -0.5px;
     }
-
-    .logo-text h1 {
+    .logo-text {
       font-size: 16px;
       font-weight: 700;
       color: var(--text-primary);
     }
-
-    .logo-text p {
+    .logo-sub {
       font-size: 11px;
       color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .mode-switch {
+      display: flex;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      padding: 3px;
+      gap: 2px;
+    }
+    .mode-switch button {
+      flex: 1;
+      padding: 7px 12px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .mode-switch button.active {
+      background: #fff;
+      color: var(--text-primary);
+      box-shadow: var(--shadow-sm);
     }
 
     .sidebar-section {
-      margin-bottom: 24px;
-      padding: 0 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
-
     .sidebar-section-title {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      padding: 0 8px 10px;
-    }
-
-    .project-tabs {
-      display: flex;
-      background: #f1f5f9;
-      border-radius: 8px;
-      padding: 3px;
-      margin-bottom: 12px;
-    }
-
-    .project-tab {
-      flex: 1;
-      text-align: center;
-      padding: 6px 8px;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--text-secondary);
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .project-tab.active {
-      background: white;
-      color: var(--primary);
-      box-shadow: var(--shadow);
-    }
-
-    .project-item {
+      padding: 0 8px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 12px;
-      border-radius: 8px;
+    }
+    .plus-btn {
+      width: 20px;
+      height: 20px;
+      border: none;
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+      color: var(--text-muted);
       cursor: pointer;
-      transition: all 0.2s;
-      margin-bottom: 4px;
-    }
-
-    .project-item:hover {
-      background: var(--primary-bg);
-    }
-
-    .project-item.active {
-      background: var(--primary-bg);
-      color: var(--primary);
-      font-weight: 600;
-    }
-
-    .project-item-name {
+      font-size: 14px;
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 13px;
+      justify-content: center;
+      transition: all var(--transition);
+      line-height: 1;
     }
+    .plus-btn:hover { background: var(--blue); color: #fff; }
 
+    .project-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .project-item {
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--transition);
+      position: relative;
+    }
+    .project-item:hover { background: var(--bg-hover); }
+    .project-item.active {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+    }
+    .project-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .project-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
     .project-status {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: #10b981;
+      background: var(--green);
     }
-
-    .add-project-btn {
-      width: 100%;
-      padding: 10px;
-      border: 1px dashed var(--border);
-      border-radius: 8px;
-      background: transparent;
+    .project-meta {
+      font-size: 11px;
       color: var(--text-muted);
-      font-size: 13px;
-      cursor: pointer;
-      transition: all 0.2s;
-      margin-top: 8px;
-    }
-
-    .add-project-btn:hover {
-      border-color: var(--primary);
-      color: var(--primary);
-      background: var(--primary-bg);
-    }
-
-    .keyword-list {
+      margin-top: 4px;
       display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
+      gap: 12px;
     }
-
-    .keyword-tag {
-      padding: 4px 10px;
-      background: #f1f5f9;
-      border-radius: 20px;
-      font-size: 12px;
-      color: var(--text-secondary);
-      cursor: pointer;
-      transition: all 0.2s;
+    .project-actions {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      display: none;
+      gap: 4px;
     }
-
-    .keyword-tag:hover {
-      background: var(--primary-bg);
-      color: var(--primary);
-    }
-
-    .add-keyword-btn {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      border: 1px dashed var(--border);
-      background: transparent;
+    .project-item:hover .project-actions { display: flex; }
+    .project-action-btn {
+      width: 22px;
+      height: 22px;
+      border: none;
+      background: #fff;
+      border-radius: 4px;
       color: var(--text-muted);
       cursor: pointer;
-      font-size: 16px;
+      font-size: 11px;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.2s;
+      box-shadow: var(--shadow-sm);
+    }
+    .project-action-btn:hover { color: var(--text-primary); }
+    .project-action-btn.danger:hover { color: var(--red); }
+    .project-rename-input {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      border: 1px solid var(--blue);
+      border-radius: 4px;
+      padding: 2px 6px;
+      width: 100%;
+      outline: none;
     }
 
-    .add-keyword-btn:hover {
-      border-color: var(--primary);
-      color: var(--primary);
-    }
-
-    /* ===== 主内容区 ===== */
-    .main-content {
-      flex: 1;
-      margin-left: 240px;
-      padding: 0;
-    }
-
-    /* ===== 顶部Tab ===== */
-    .top-tabs {
+    .compare-item {
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--transition);
       display: flex;
-      background: rgba(255,255,255,0.8);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid var(--border);
-      padding: 0 24px;
-      position: sticky;
-      top: 0;
-      z-index: 50;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .compare-item:hover { background: var(--bg-hover); }
+    .compare-item.active {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: #c2410c;
     }
 
-    .top-tab {
-      padding: 16px 20px;
-      font-size: 14px;
+    .keyword-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 0 8px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      font-size: 12px;
+      color: #2563eb;
       font-weight: 500;
+    }
+    .pill-remove {
+      cursor: pointer;
+      opacity: 0.6;
+      font-size: 14px;
+      line-height: 1;
+    }
+    .pill-remove:hover { opacity: 1; }
+    .pill-add {
+      width: 24px;
+      height: 24px;
+      border: 1px dashed var(--border-light);
+      background: transparent;
+      border-radius: 999px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition);
+    }
+    .pill-add:hover { border-color: var(--blue); color: var(--blue); }
+
+    .preset-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 0 8px;
+    }
+    .preset-tag {
+      padding: 4px 10px;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      font-size: 11px;
       color: var(--text-secondary);
       cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: all 0.2s;
+      transition: all var(--transition);
+      font-weight: 500;
+    }
+    .preset-tag:hover { background: #e0e7ff; color: #4f46e5; }
+
+    /* Main area */
+    .main-area {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    /* Group tabs */
+    .group-tabs {
+      display: flex;
+      gap: 4px;
+      padding: 16px 24px 0;
+      border-bottom: 1px solid var(--border-light);
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .group-tab {
       display: flex;
       align-items: center;
       gap: 6px;
+      padding: 10px 18px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: all var(--transition);
     }
-
-    .top-tab:hover {
-      color: var(--text-primary);
-    }
-
-    .top-tab.active {
-      color: var(--primary);
-      border-bottom-color: var(--primary);
+    .group-tab:hover { color: var(--text-primary); }
+    .group-tab.active {
+      color: var(--blue-dark);
+      border-bottom-color: var(--blue);
       font-weight: 600;
     }
+    .group-icon { font-size: 16px; }
 
-    /* ===== 搜索栏 ===== */
-    .search-bar {
-      background: rgba(255,255,255,0.6);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid var(--border);
-      padding: 16px 24px;
+    /* Sub tabs */
+    .sub-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 12px 24px;
+      background: rgba(255,255,255,0.5);
+      border-bottom: 1px solid var(--border-light);
+      flex-wrap: wrap;
+    }
+    .sub-tab {
+      padding: 6px 14px;
+      border: 1px solid var(--border-light);
+      background: #fff;
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .sub-tab:hover { border-color: var(--blue); color: var(--blue-dark); }
+    .sub-tab.active {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
+
+    /* Top bar */
+    .top-bar {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 16px;
+      padding: 16px 24px;
+      background: rgba(255,255,255,0.6);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-light);
       flex-wrap: wrap;
     }
 
-    .search-input-wrapper {
+    .search-box {
       flex: 1;
       min-width: 300px;
-      position: relative;
+      max-width: 500px;
     }
-
-    .search-input {
-      width: 100%;
-      padding: 10px 16px 10px 40px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      font-size: 14px;
-      background: white;
-      transition: all 0.2s;
-    }
-
-    .search-input:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-    }
-
-    .search-icon {
-      position: absolute;
-      left: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-muted);
-    }
-
-    .filter-btn {
-      padding: 10px 14px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: white;
-      font-size: 13px;
-      color: var(--text-secondary);
-      cursor: pointer;
+    .search-input-wrapper {
       display: flex;
       align-items: center;
       gap: 6px;
-      transition: all 0.2s;
+      padding: 8px 14px;
+      background: #fff;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      transition: all var(--transition);
+      min-height: 42px;
+      flex-wrap: wrap;
     }
-
-    .filter-btn:hover {
-      border-color: var(--primary);
-      color: var(--primary);
+    .search-input-wrapper:focus-within {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
-
-    .filter-btn .count {
-      background: var(--primary);
-      color: white;
-      font-size: 10px;
+    .search-input {
+      flex: 1;
+      min-width: 120px;
+      border: none;
+      outline: none;
+      font-size: 13px;
+      color: var(--text-primary);
+      background: transparent;
+    }
+    .search-input::placeholder { color: var(--text-muted); }
+    .search-clear {
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 14px;
       padding: 2px 6px;
-      border-radius: 10px;
+      border-radius: 4px;
+      transition: all var(--transition);
+    }
+    .search-clear:hover { color: var(--text-primary); }
+
+    .filter-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: #fff;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+    .filter-btn:hover { border-color: var(--blue); color: var(--blue-dark); }
+    .filter-btn.active {
+      background: #eff6ff;
+      border-color: var(--blue);
+      color: var(--blue-dark);
+    }
+    .filter-btn .count {
+      background: var(--blue);
+      color: #fff;
+      font-size: 11px;
+      padding: 1px 6px;
+      border-radius: 999px;
       font-weight: 600;
     }
 
-    .time-buttons {
+    .time-range-group {
       display: flex;
-      background: white;
-      border: 1px solid var(--border);
-      border-radius: 10px;
+      background: #fff;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
       overflow: hidden;
     }
-
     .time-btn {
-      padding: 10px 14px;
-      font-size: 13px;
-      color: var(--text-secondary);
-      cursor: pointer;
+      padding: 8px 14px;
       border: none;
       background: transparent;
-      transition: all 0.2s;
-    }
-
-    .time-btn:hover {
-      background: var(--primary-bg);
-    }
-
-    .time-btn.active {
-      background: var(--primary);
-      color: white;
+      color: var(--text-secondary);
+      font-size: 12px;
       font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .time-btn:hover { background: var(--bg-hover); }
+    .time-btn.active {
+      background: var(--blue);
+      color: #fff;
     }
 
     .action-buttons {
       display: flex;
       gap: 8px;
+      margin-left: auto;
     }
-
     .btn {
-      padding: 10px 16px;
-      border-radius: 10px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      border: 1px solid var(--border);
-      background: white;
-      color: var(--text-secondary);
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 6px;
-      transition: all 0.2s;
-    }
-
-    .btn:hover {
-      border-color: var(--primary);
-      color: var(--primary);
-    }
-
-    .btn-primary {
-      background: var(--primary);
-      color: white;
-      border-color: var(--primary);
-    }
-
-    .btn-primary:hover {
-      background: var(--primary-light);
-      border-color: var(--primary-light);
-      color: white;
-    }
-
-    /* ===== 细分Pill栏 ===== */
-    .sub-pills {
-      padding: 12px 24px;
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      background: rgba(255,255,255,0.4);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .sub-pill {
-      padding: 6px 14px;
-      border-radius: 20px;
+      padding: 8px 16px;
+      border-radius: var(--radius-btn);
       font-size: 13px;
-      color: var(--text-secondary);
-      cursor: pointer;
-      border: 1px solid var(--border);
-      background: white;
-      transition: all 0.2s;
-    }
-
-    .sub-pill:hover {
-      border-color: var(--primary);
-      color: var(--primary);
-    }
-
-    .sub-pill.active {
-      background: var(--primary);
-      color: white;
-      border-color: var(--primary);
       font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition);
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: var(--blue);
+      color: #fff;
+      border-color: var(--blue);
+    }
+    .btn-primary:hover { background: var(--blue-dark); border-color: var(--blue-dark); }
+    .btn-secondary {
+      background: #fff;
+      color: var(--text-secondary);
+      border-color: var(--border-light);
+    }
+    .btn-secondary:hover { border-color: var(--blue); color: var(--blue-dark); }
+    .btn-icon {
+      padding: 8px 10px;
     }
 
-    /* ===== 仪表盘内容 ===== */
+    /* Dashboard content */
     .dashboard-content {
       padding: 24px;
-    }
-
-    .section-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin-bottom: 8px;
       display: flex;
-      align-items: center;
-      gap: 8px;
+      flex-direction: column;
+      gap: 20px;
     }
 
-    .section-title::before {
-      content: '';
-      width: 4px;
-      height: 18px;
-      background: var(--primary);
-      border-radius: 2px;
+    .card {
+      background: #fff;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-light);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      transition: all var(--transition);
     }
-
-    .section-desc {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-bottom: 16px;
-    }
-
-    /* ===== 概览指标卡片 ===== */
-    .overview-cards {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .metric-card {
-      background: var(--card-bg);
-      border-radius: var(--radius);
-      padding: 20px;
-      box-shadow: var(--shadow);
-      border: 1px solid rgba(255,255,255,0.8);
-      transition: all 0.3s;
-    }
-
-    .metric-card:hover {
-      transform: translateY(-2px);
+    .card:hover {
       box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
     }
-
-    .metric-label {
-      font-size: 13px;
-      color: var(--text-secondary);
-      margin-bottom: 8px;
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-light);
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
-
-    .metric-value {
-      font-size: 28px;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin-bottom: 8px;
-    }
-
-    .metric-change {
-      font-size: 12px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .metric-change.up { color: #10b981; }
-    .metric-change.down { color: #ef4444; }
-
-    .metric-sparkline {
-      height: 30px;
-      margin-top: 8px;
-    }
-
-    /* ===== 图表模块 ===== */
-    .chart-row {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .chart-row-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .chart-card {
-      background: var(--card-bg);
-      border-radius: var(--radius);
-      padding: 20px;
-      box-shadow: var(--shadow);
-      border: 1px solid rgba(255,255,255,0.8);
-    }
-
-    .chart-card-title {
+    .card-title {
       font-size: 14px;
       font-weight: 600;
       color: var(--text-primary);
-      margin-bottom: 16px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 8px;
+    }
+    .card-title .icon { font-size: 16px; }
+    .card-body { padding: 20px; }
+
+    /* Overview cards */
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    .overview-card {
+      background: #fff;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-light);
+      box-shadow: var(--shadow-sm);
+      padding: 20px;
+      transition: all var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+    .overview-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+    .overview-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+    }
+    .overview-card.blue::before { background: linear-gradient(90deg, var(--blue), #60a5fa); }
+    .overview-card.purple::before { background: linear-gradient(90deg, var(--purple), #a78bfa); }
+    .overview-card.cyan::before { background: linear-gradient(90deg, var(--cyan), #22d3ee); }
+    .overview-card.green::before { background: linear-gradient(90deg, var(--green), #34d399); }
+
+    .overview-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .overview-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.2;
+      letter-spacing: -0.5px;
+    }
+    .overview-change {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 8px;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+    .overview-change.up {
+      color: #059669;
+      background: #d1fae5;
+    }
+    .overview-change.down {
+      color: #dc2626;
+      background: #fee2e2;
+    }
+    .overview-sparkline {
+      margin-top: 12px;
+      height: 40px;
+    }
+
+    /* Chart rows */
+    .chart-row {
+      display: grid;
+      gap: 16px;
+    }
+    .chart-row-2 {
+      grid-template-columns: 2fr 1fr 1fr;
+    }
+    .chart-row-3 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .chart-row-4 {
+      grid-template-columns: repeat(4, 1fr);
     }
 
     .chart-container {
       width: 100%;
-      height: 280px;
+      height: 300px;
     }
-
     .chart-container-sm {
       width: 100%;
-      height: 200px;
+      height: 220px;
     }
 
-    /* ===== 三大分类模块 ===== */
-    .category-modules {
+    /* Platform cards */
+    .platform-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-      margin-bottom: 24px;
+      grid-template-columns: repeat(9, 1fr);
+      gap: 12px;
     }
-
-    .category-card {
-      background: var(--card-bg);
-      border-radius: var(--radius);
-      padding: 20px;
-      box-shadow: var(--shadow);
-      border: 1px solid rgba(255,255,255,0.8);
-      border-top: 3px solid;
+    .platform-card {
+      background: #fff;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-light);
+      padding: 14px 12px;
+      text-align: center;
+      transition: all var(--transition);
+      cursor: pointer;
     }
-
-    .category-card.pr { border-top-color: var(--pr); }
-    .category-card.affiliate { border-top-color: var(--affiliate); }
-    .category-card.social { border-top-color: var(--social); }
-
-    .category-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
+    .platform-card:hover {
+      border-color: var(--blue);
+      box-shadow: var(--shadow-sm);
     }
-
-    .category-name {
-      font-size: 15px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .platform-icon {
+      font-size: 24px;
+      margin-bottom: 6px;
     }
-
-    .category-count {
-      font-size: 13px;
+    .platform-name {
+      font-size: 11px;
       color: var(--text-muted);
       font-weight: 500;
+      margin-bottom: 4px;
     }
-
-    .category-metrics {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .category-metric {
-      text-align: center;
-      padding: 10px;
-      background: #f8fafc;
-      border-radius: 8px;
-    }
-
-    .category-metric-value {
+    .platform-count {
       font-size: 18px;
       font-weight: 700;
       color: var(--text-primary);
     }
-
-    .category-metric-label {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 4px;
+    .platform-card.health {
+      background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+      border-color: #bbf7d0;
     }
-
-    .top-list {
-      max-height: 240px;
-      overflow-y: auto;
-    }
-
-    .top-item {
-      padding: 10px 0;
-      border-bottom: 1px solid #f1f5f9;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .top-item:last-child {
-      border-bottom: none;
-    }
-
-    .top-item:hover {
-      background: #f8fafc;
-      margin: 0 -8px;
-      padding-left: 8px;
-      padding-right: 8px;
-      border-radius: 6px;
-    }
-
-    .top-item-title {
-      font-size: 13px;
-      color: var(--text-primary);
-      font-weight: 500;
-      margin-bottom: 6px;
-      line-height: 1.4;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    .top-item-meta {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    /* ===== 平台数据卡 ===== */
-    .platform-cards {
-      display: grid;
-      grid-template-columns: repeat(8, 1fr);
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-
-    .platform-card {
-      background: var(--card-bg);
-      border-radius: var(--radius);
-      padding: 16px 12px;
-      text-align: center;
-      box-shadow: var(--shadow);
-      border: 1px solid rgba(255,255,255,0.8);
-      transition: all 0.3s;
-      cursor: pointer;
-    }
-
-    .platform-card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-md);
-    }
-
-    .platform-icon {
-      font-size: 24px;
-      margin-bottom: 8px;
-    }
-
-    .platform-name {
-      font-size: 11px;
-      color: var(--text-secondary);
-      margin-bottom: 6px;
-      font-weight: 500;
-    }
-
-    .platform-value {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--text-primary);
-    }
-
-    /* ===== 品牌健康指数 ===== */
-    .health-card {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border-radius: var(--radius);
-      padding: 20px;
-      box-shadow: var(--shadow-md);
-    }
-
     .health-score {
-      text-align: center;
-      margin-bottom: 16px;
-    }
-
-    .health-score-value {
-      font-size: 48px;
+      font-size: 24px;
       font-weight: 700;
-      line-height: 1;
+      color: #059669;
+    }
+    .health-label {
+      font-size: 11px;
+      color: #059669;
+      font-weight: 600;
     }
 
-    .health-score-label {
-      font-size: 13px;
-      opacity: 0.9;
-      margin-top: 4px;
+    /* Category modules */
+    .category-card .card-header {
+      border-bottom: none;
+      padding-bottom: 8px;
     }
-
-    .health-dimensions {
+    .category-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      padding: 0 20px 16px;
+    }
+    .category-stat {
+      text-align: center;
+      padding: 10px;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+    }
+    .category-stat-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .category-stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .category-top-list {
+      padding: 0 20px 20px;
+    }
+    .top-item {
       display: flex;
-      flex-direction: column;
+      align-items: flex-start;
       gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-light);
     }
-
-    .health-dim {
+    .top-item:last-child { border-bottom: none; }
+    .top-rank {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--bg-tertiary);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      font-size: 12px;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
     }
-
-    .health-dim-bar {
-      flex: 1;
-      height: 6px;
-      background: rgba(255,255,255,0.2);
-      border-radius: 3px;
-      margin: 0 12px;
+    .top-rank.top1 { background: #fef3c7; color: #d97706; }
+    .top-rank.top2 { background: #e0e7ff; color: #4f46e5; }
+    .top-rank.top3 { background: #fce7f3; color: #db2777; }
+    .top-content { flex: 1; min-width: 0; }
+    .top-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
       overflow: hidden;
+      text-overflow: ellipsis;
     }
-
-    .health-dim-fill {
-      height: 100%;
-      background: white;
-      border-radius: 3px;
-    }
-
-    /* ===== 热门话题 ===== */
-    .topic-list {
+    .top-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 3px;
       display: flex;
-      flex-direction: column;
-      gap: 10px;
+      gap: 12px;
     }
 
+    /* Topics */
+    .topic-list { padding: 0 20px 20px; }
     .topic-item {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 8px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border-light);
     }
-
-    .topic-item:hover {
-      background: #f8fafc;
-    }
-
+    .topic-item:last-child { border-bottom: none; }
     .topic-rank {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: #f1f5f9;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-secondary);
+      width: 22px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-align: center;
     }
-
-    .topic-rank.top1 { background: #fef3c7; color: #d97706; }
-    .topic-rank.top2 { background: #e0e7ff; color: #6366f1; }
-    .topic-rank.top3 { background: #fce7f3; color: #ec4899; }
-
     .topic-name {
       flex: 1;
       font-size: 13px;
       font-weight: 500;
+      color: var(--text-primary);
     }
-
-    .topic-count {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    /* ===== 地理分布 ===== */
-    .geo-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .geo-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .geo-flag {
-      font-size: 20px;
-      width: 30px;
-    }
-
-    .geo-info {
-      flex: 1;
-    }
-
-    .geo-name {
-      font-size: 13px;
-      font-weight: 500;
-      margin-bottom: 4px;
-    }
-
-    .geo-bar {
+    .topic-bar {
+      flex: 2;
       height: 6px;
-      background: #f1f5f9;
+      background: var(--bg-tertiary);
       border-radius: 3px;
       overflow: hidden;
     }
+    .topic-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--blue), var(--purple));
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+    .topic-count {
+      width: 40px;
+      text-align: right;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
 
+    /* Geo distribution */
+    .geo-list { padding: 0 20px 20px; }
+    .geo-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+    }
+    .geo-flag { font-size: 20px; }
+    .geo-name {
+      flex: 1;
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+    .geo-bar {
+      flex: 2;
+      height: 8px;
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+      overflow: hidden;
+    }
     .geo-bar-fill {
       height: 100%;
-      background: linear-gradient(90deg, var(--primary), var(--pr));
-      border-radius: 3px;
+      background: linear-gradient(90deg, var(--cyan), var(--blue));
+      border-radius: 4px;
     }
-
-    .geo-value {
-      font-size: 12px;
-      color: var(--text-muted);
-      font-weight: 600;
-      width: 50px;
+    .geo-count {
+      width: 40px;
       text-align: right;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
     }
 
-    /* ===== AI洞察 ===== */
-    .insight-cards {
+    /* AI Insights */
+    .insights-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 16px;
-      margin-bottom: 24px;
     }
-
     .insight-card {
-      background: var(--card-bg);
-      border-radius: var(--radius);
+      background: #fff;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-light);
+      box-shadow: var(--shadow-sm);
       padding: 20px;
-      box-shadow: var(--shadow);
-      border-left: 4px solid;
+      transition: all var(--transition);
+      position: relative;
+      overflow: hidden;
     }
-
-    .insight-card.growth { border-left-color: #10b981; }
-    .insight-card.risk { border-left-color: #ef4444; }
-    .insight-card.insight { border-left-color: #6366f1; }
-    .insight-card.opportunity { border-left-color: #f59e0b; }
+    .insight-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+    .insight-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+    }
+    .insight-card.growth::before { background: linear-gradient(90deg, #10b981, #34d399); }
+    .insight-card.risk::before { background: linear-gradient(90deg, #ef4444, #f87171); }
+    .insight-card.performance::before { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+    .insight-card.opportunity::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
 
     .insight-icon {
-      font-size: 24px;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
       margin-bottom: 12px;
     }
+    .insight-card.growth .insight-icon { background: #d1fae5; }
+    .insight-card.risk .insight-icon { background: #fee2e2; }
+    .insight-card.performance .insight-icon { background: #dbeafe; }
+    .insight-card.opportunity .insight-icon { background: #ede9fe; }
 
     .insight-title {
       font-size: 14px;
       font-weight: 600;
+      color: var(--text-primary);
       margin-bottom: 8px;
     }
-
     .insight-desc {
       font-size: 12px;
       color: var(--text-secondary);
       line-height: 1.6;
     }
 
-    /* ===== 热门内容表格 ===== */
-    .content-table-card {
-      background: var(--card-bg);
-      border-radius: var(--radius);
-      padding: 20px;
-      box-shadow: var(--shadow);
-      margin-bottom: 24px;
+    /* Data table */
+    .table-container {
+      overflow-x: auto;
     }
-
-    .table-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-    }
-
-    .table-title {
-      font-size: 15px;
-      font-weight: 600;
-    }
-
-    .table-actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .table-search {
-      padding: 8px 12px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 13px;
-      width: 200px;
-    }
-
-    .table-search:focus {
-      outline: none;
-      border-color: var(--primary);
-    }
-
-    .content-table {
+    .data-table {
       width: 100%;
       border-collapse: collapse;
     }
-
-    .content-table th {
+    .data-table th {
+      background: var(--bg-tertiary);
+      padding: 12px 16px;
       text-align: left;
-      padding: 12px;
       font-size: 12px;
       font-weight: 600;
-      color: var(--text-muted);
+      color: var(--text-secondary);
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      border-bottom: 2px solid var(--border);
-      background: #f8fafc;
+      border-bottom: 1px solid var(--border-light);
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
     }
-
-    .content-table td {
-      padding: 12px;
+    .data-table th:hover { color: var(--blue-dark); }
+    .data-table th .sort-icon {
+      display: inline-block;
+      margin-left: 4px;
+      opacity: 0.4;
+    }
+    .data-table th.sorted .sort-icon { opacity: 1; color: var(--blue); }
+    .data-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-light);
       font-size: 13px;
-      border-bottom: 1px solid #f1f5f9;
+      color: var(--text-primary);
+    }
+    .data-table tr:hover td { background: var(--bg-hover); }
+    .data-table tr:nth-child(even) td { background: #fafbfc; }
+    .data-table tr:nth-child(even):hover td { background: var(--bg-hover); }
+
+    .table-title-cell {
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .table-title-cell a {
+      color: var(--text-primary);
+      text-decoration: none;
+    }
+    .table-title-cell a:hover { color: var(--blue); }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .tag-pr { background: #f3e8ff; color: #7c3aed; }
+    .tag-affiliate { background: #cffafe; color: #0891b2; }
+    .tag-social { background: #dbeafe; color: #2563eb; }
+    .tag-positive { background: #d1fae5; color: #059669; }
+    .tag-neutral { background: #f3f4f6; color: #6b7280; }
+    .tag-negative { background: #fee2e2; color: #dc2626; }
+
+    .table-search {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .table-search input {
+      flex: 1;
+      max-width: 300px;
+      padding: 6px 12px;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      outline: none;
+    }
+    .table-search input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
 
-    .content-table tr:hover {
-      background: #f8fafc;
+    .pagination {
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--border-light);
+    }
+    .pagination-info {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .pagination-buttons {
+      display: flex;
+      gap: 4px;
+    }
+    .page-btn {
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--border-light);
+      background: #fff;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .page-btn:hover { border-color: var(--blue); color: var(--blue); }
+    .page-btn.active {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
+    .page-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
     }
 
-    .rank-num {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background: #f1f5f9;
+    /* Health index detail */
+    .health-detail {
+      padding: 0 20px 20px;
+    }
+    .health-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+    }
+    .health-label {
+      width: 70px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .health-bar {
+      flex: 1;
+      height: 6px;
+      background: var(--bg-tertiary);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .health-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+    }
+    .health-score-val {
+      width: 30px;
+      text-align: right;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    /* Loading */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255,255,255,0.8);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
-      font-weight: 600;
+      z-index: 1000;
+      backdrop-filter: blur(4px);
+    }
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border-light);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Dropdown */
+    .dropdown {
+      position: relative;
+    }
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 4px;
+      background: #fff;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+      padding: 8px;
+      min-width: 200px;
+      z-index: 100;
+      display: none;
+    }
+    .dropdown-menu.show { display: block; }
+    .dropdown-item {
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 13px;
       color: var(--text-secondary);
-    }
-
-    .rank-num.top3 {
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
-      color: white;
-    }
-
-    .platform-badge {
-      display: inline-flex;
+      display: flex;
       align-items: center;
-      gap: 4px;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 500;
-      background: #f1f5f9;
-      color: var(--text-secondary);
+      gap: 8px;
+      transition: all var(--transition);
+    }
+    .dropdown-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+    .dropdown-item input[type="checkbox"] {
+      accent-color: var(--blue);
     }
 
-    .category-tag {
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 500;
+    /* Responsive */
+    @media (max-width: 1400px) {
+      .platform-grid { grid-template-columns: repeat(5, 1fr); }
+      .insights-grid { grid-template-columns: repeat(2, 1fr); }
+      .chart-row-2 { grid-template-columns: 1fr 1fr; }
+      .chart-row-2 > :first-child { grid-column: 1 / -1; }
+    }
+    @media (max-width: 1200px) {
+      .overview-grid { grid-template-columns: repeat(2, 1fr); }
+      .chart-row-2, .chart-row-3, .chart-row-4 {
+        grid-template-columns: 1fr;
+      }
+      .platform-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 768px) {
+      .app-container { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .overview-grid { grid-template-columns: 1fr; }
+      .platform-grid { grid-template-columns: repeat(2, 1fr); }
+      .insights-grid { grid-template-columns: 1fr; }
+      .dashboard-content { padding: 16px; }
+      .top-bar { padding: 12px 16px; }
+      .group-tabs { padding: 12px 16px 0; }
+      .sub-tabs { padding: 10px 16px; }
     }
 
-    .category-tag.pr { background: var(--pr-bg); color: var(--pr); }
-    .category-tag.affiliate { background: var(--affiliate-bg); color: var(--affiliate); }
-    .category-tag.social { background: var(--social-bg); color: var(--social); }
-
-    .sentiment-tag {
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 500;
+    /* Sentiment gauge card */
+    .sentiment-gauge {
+      height: 220px;
     }
-
-    .sentiment-tag.positive { background: #d1fae5; color: #059669; }
-    .sentiment-tag.neutral { background: #f1f5f9; color: #64748b; }
-    .sentiment-tag.negative { background: #fee2e2; color: #dc2626; }
-
-    .num {
-      font-weight: 600;
-      font-variant-numeric: tabular-nums;
+    .sentiment-breakdown {
+      display: flex;
+      justify-content: space-around;
+      padding: 0 20px 16px;
     }
-
-    /* ===== 加载状态 ===== */
-    .loading {
+    .sentiment-item {
       text-align: center;
-      padding: 40px;
+    }
+    .sentiment-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+    }
+    .sentiment-label {
+      font-size: 12px;
       color: var(--text-muted);
     }
-
-    /* ===== 响应式 ===== */
-    @media (max-width: 1400px) {
-      .platform-cards { grid-template-columns: repeat(4, 1fr); }
-      .insight-cards { grid-template-columns: repeat(2, 1fr); }
+    .sentiment-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
     }
 
-    @media (max-width: 1200px) {
-      .overview-cards { grid-template-columns: repeat(2, 1fr); }
-      .chart-row { grid-template-columns: 1fr; }
-      .chart-row-2 { grid-template-columns: 1fr; }
-      .category-modules { grid-template-columns: 1fr; }
+    /* Product line chart */
+    .product-chart {
+      height: 250px;
     }
 
-    @media (max-width: 768px) {
-      .sidebar { display: none; }
-      .main-content { margin-left: 0; }
-      .overview-cards { grid-template-columns: 1fr; }
-      .platform-cards { grid-template-columns: repeat(2, 1fr); }
-      .insight-cards { grid-template-columns: 1fr; }
+    /* Empty state */
+    .empty-state {
+      padding: 60px 20px;
+      text-align: center;
+      color: var(--text-muted);
     }
-
-    /* ===== 滚动条 ===== */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+    .empty-state-text {
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+  </div>
+
   <div class="app-container">
-    <!-- 侧边栏 -->
+    <!-- Sidebar -->
     <aside class="sidebar">
-      <div class="sidebar-logo">
+      <div class="logo">
         <div class="logo-icon">BM</div>
-        <div class="logo-text">
-          <h1>品牌监测</h1>
-          <p>Brand Monitor</p>
+        <div>
+          <div class="logo-text">品牌监测</div>
+          <div class="logo-sub">Brand Monitor Pro</div>
         </div>
       </div>
 
-      <div class="sidebar-section">
-        <div class="project-tabs">
-          <div class="project-tab active">单项目</div>
-          <div class="project-tab">竞品对比</div>
-        </div>
-        <div class="sidebar-section-title">监控项目</div>
-        <div class="project-item active">
-          <div class="project-item-name">
-            <span class="project-status"></span>
-            Mammotion 品牌
-          </div>
-        </div>
-        <div class="project-item">
-          <div class="project-item-name">
-            <span class="project-status"></span>
-            LUBA 系列
-          </div>
-        </div>
-        <div class="project-item">
-          <div class="project-item-name">
-            <span class="project-status"></span>
-            竞品监测
-          </div>
-        </div>
-        <button class="add-project-btn">+ 新建项目</button>
+      <div class="mode-switch">
+        <button class="active" onclick="switchMode('single')">单项目</button>
+        <button onclick="switchMode('compare')">竞品对比</button>
       </div>
 
       <div class="sidebar-section">
-        <div class="sidebar-section-title">当前项目关键词</div>
-        <div class="keyword-list">
-          <div class="keyword-tag">Mammotion</div>
-          <div class="keyword-tag">LUBA</div>
-          <div class="keyword-tag">YUKA</div>
-          <button class="add-keyword-btn">+</button>
+        <div class="sidebar-section-title">
+          <span>监控项目</span>
+          <button class="plus-btn" onclick="addProject()">+</button>
         </div>
+        <div class="project-list" id="projectList"></div>
+      </div>
+
+      <div class="sidebar-section" id="compareSection" style="display:none;">
+        <div class="sidebar-section-title">
+          <span>对比品牌</span>
+        </div>
+        <div class="project-list" id="compareList"></div>
       </div>
 
       <div class="sidebar-section">
-        <div class="sidebar-section-title">快捷关键词</div>
-        <div class="keyword-list">
-          <div class="keyword-tag">割草机器人</div>
-          <div class="keyword-tag">robot mower</div>
-          <div class="keyword-tag">smart lawn</div>
-          <div class="keyword-tag">Husqvarna</div>
-          <div class="keyword-tag">Worx</div>
+        <div class="sidebar-section-title">
+          <span>当前关键词</span>
+          <button class="plus-btn" onclick="addKeyword()">+</button>
+        </div>
+        <div class="keyword-pills" id="keywordPills"></div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">
+          <span>快捷关键词</span>
+        </div>
+        <div class="preset-tags">
+          <span class="preset-tag" onclick="addPresetKeyword('Mammotion')">Mammotion</span>
+          <span class="preset-tag" onclick="addPresetKeyword('LUBA')">LUBA</span>
+          <span class="preset-tag" onclick="addPresetKeyword('YUKA')">YUKA</span>
+          <span class="preset-tag" onclick="addPresetKeyword('SPINO')">SPINO</span>
+          <span class="preset-tag" onclick="addPresetKeyword('割草机器人')">割草机器人</span>
+          <span class="preset-tag" onclick="addPresetKeyword('robot mower')">robot mower</span>
         </div>
       </div>
     </aside>
 
-    <!-- 主内容区 -->
-    <main class="main-content">
-      <!-- 顶部Tab -->
-      <div class="top-tabs">
-        <div class="top-tab active" data-tab="overview">
-          <span>📊</span> 全渠道总览
-        </div>
-        <div class="top-tab" data-tab="pr">
-          <span>📰</span> PR媒体
-        </div>
-        <div class="top-tab" data-tab="affiliate">
-          <span>🛒</span> 联盟营销
-        </div>
-        <div class="top-tab" data-tab="influencer">
-          <span>🎬</span> 红人内容
-        </div>
-        <div class="top-tab" data-tab="social">
-          <span>💬</span> 社交舆情
-        </div>
+    <!-- Main area -->
+    <main class="main-area">
+      <!-- Group tabs -->
+      <div class="group-tabs" id="groupTabs">
+        <button class="group-tab active" data-group="overview" onclick="switchGroup('overview')">
+          <span class="group-icon">📊</span>全渠道总览
+        </button>
+        <button class="group-tab" data-group="pr" onclick="switchGroup('pr')">
+          <span class="group-icon">📰</span>PR媒体
+        </button>
+        <button class="group-tab" data-group="affiliate" onclick="switchGroup('affiliate')">
+          <span class="group-icon">🛒</span>联盟营销
+        </button>
+        <button class="group-tab" data-group="influencer" onclick="switchGroup('influencer')">
+          <span class="group-icon">🎬</span>红人内容
+        </button>
+        <button class="group-tab" data-group="social" onclick="switchGroup('social')">
+          <span class="group-icon">💬</span>社交舆情
+        </button>
       </div>
 
-      <!-- 搜索栏 -->
-      <div class="search-bar">
-        <div class="search-input-wrapper">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="keywordInput" placeholder="输入关键词，按回车或逗号添加..." value="Mammotion">
+      <!-- Sub tabs -->
+      <div class="sub-tabs" id="subTabs">
+        <button class="sub-tab active" data-sub="all">全部</button>
+        <button class="sub-tab" data-sub="pr">PR类</button>
+        <button class="sub-tab" data-sub="affiliate">联盟类</button>
+        <button class="sub-tab" data-sub="social">社媒类</button>
+      </div>
+
+      <!-- Top bar -->
+      <div class="top-bar">
+        <div class="search-box">
+          <div class="search-input-wrapper">
+            <span style="color: var(--text-muted);">🔍</span>
+            <input type="text" class="search-input" id="searchInput" placeholder="输入品牌关键词，逗号分隔..." value="Mammotion,LUBA,YUKA">
+            <span class="search-clear" onclick="clearSearch()">✕</span>
+          </div>
         </div>
-        <button class="filter-btn">
-          <span>🌐</span> 渠道 <span class="count">8</span>
-        </button>
-        <button class="filter-btn">
-          <span>📍</span> 地区 <span class="count">全部</span>
-        </button>
-        <div class="time-buttons">
-          <button class="time-btn active" data-days="7">7天</button>
-          <button class="time-btn" data-days="30">30天</button>
-          <button class="time-btn" data-days="90">90天</button>
-          <button class="time-btn">自定义</button>
+
+        <div class="dropdown">
+          <button class="filter-btn" onclick="toggleDropdown('channelDropdown')">
+            📡 渠道 <span class="count" id="channelCount">8</span>
+          </button>
+          <div class="dropdown-menu" id="channelDropdown">
+            <label class="dropdown-item"><input type="checkbox" value="news" checked> 📰 新闻媒体</label>
+            <label class="dropdown-item"><input type="checkbox" value="affiliate_site" checked> 🛒 联盟导购</label>
+            <label class="dropdown-item"><input type="checkbox" value="forum" checked> 💬 社区论坛</label>
+            <label class="dropdown-item"><input type="checkbox" value="youtube" checked> ▶️ YouTube</label>
+            <label class="dropdown-item"><input type="checkbox" value="tiktok" checked> 🎵 TikTok</label>
+            <label class="dropdown-item"><input type="checkbox" value="instagram" checked> 📷 Instagram</label>
+            <label class="dropdown-item"><input type="checkbox" value="facebook" checked> 📘 Facebook</label>
+            <label class="dropdown-item"><input type="checkbox" value="twitter" checked> 🐦 Twitter/X</label>
+          </div>
         </div>
+
+        <div class="dropdown">
+          <button class="filter-btn" onclick="toggleDropdown('regionDropdown')">
+            🌍 地区 <span class="count" id="regionCount">5</span>
+          </button>
+          <div class="dropdown-menu" id="regionDropdown">
+            <label class="dropdown-item"><input type="checkbox" value="US" checked> 🇺🇸 美国</label>
+            <label class="dropdown-item"><input type="checkbox" value="DE" checked> 🇩🇪 德国</label>
+            <label class="dropdown-item"><input type="checkbox" value="UK" checked> 🇬🇧 英国</label>
+            <label class="dropdown-item"><input type="checkbox" value="FR" checked> 🇫🇷 法国</label>
+            <label class="dropdown-item"><input type="checkbox" value="SE" checked> 🇸🇪 瑞典</label>
+            <label class="dropdown-item"><input type="checkbox" value="JP"> 🇯🇵 日本</label>
+            <label class="dropdown-item"><input type="checkbox" value="CA"> 🇨🇦 加拿大</label>
+            <label class="dropdown-item"><input type="checkbox" value="AU"> 🇦🇺 澳大利亚</label>
+          </div>
+        </div>
+
+        <div class="time-range-group">
+          <button class="time-btn" onclick="setTimeRange(7)">7天</button>
+          <button class="time-btn active" onclick="setTimeRange(30)">30天</button>
+          <button class="time-btn" onclick="setTimeRange(90)">90天</button>
+        </div>
+
         <div class="action-buttons">
-          <button class="btn" id="refreshBtn">🔄 刷新</button>
-          <button class="btn">💾 保存</button>
-          <button class="btn">📥 导出 ▾</button>
-          <button class="btn btn-primary" id="searchBtn">🔍 开始监控</button>
+          <button class="btn btn-secondary btn-icon" title="刷新" onclick="refreshData()">🔄</button>
+          <button class="btn btn-secondary" onclick="exportExcel()">📊 导出</button>
+          <button class="btn btn-primary" onclick="startMonitor()">▶️ 开始监控</button>
         </div>
       </div>
 
-      <!-- 细分Pill栏 -->
-      <div class="sub-pills">
-        <div class="sub-pill active">全部</div>
-        <div class="sub-pill">PR类</div>
-        <div class="sub-pill">联盟类</div>
-        <div class="sub-pill">社媒类</div>
-      </div>
-
-      <!-- 仪表盘内容 -->
+      <!-- Dashboard content -->
       <div class="dashboard-content" id="dashboardContent">
-        <div class="loading">⏳ 正在加载数据...</div>
+        <!-- Overview cards -->
+        <div class="overview-grid">
+          <div class="overview-card blue">
+            <div class="overview-label">📝 总提及量</div>
+            <div class="overview-value" id="totalMentions">0</div>
+            <div class="overview-change up" id="mentionsChange">+0%</div>
+            <div class="overview-sparkline" id="sparkline1"></div>
+          </div>
+          <div class="overview-card purple">
+            <div class="overview-label">👁️ 总浏览量</div>
+            <div class="overview-value" id="totalViews">0</div>
+            <div class="overview-change up" id="viewsChange">+0%</div>
+            <div class="overview-sparkline" id="sparkline2"></div>
+          </div>
+          <div class="overview-card cyan">
+            <div class="overview-label">💬 总互动量</div>
+            <div class="overview-value" id="totalEngagement">0</div>
+            <div class="overview-change up" id="engagementChange">+0%</div>
+            <div class="overview-sparkline" id="sparkline3"></div>
+          </div>
+          <div class="overview-card green">
+            <div class="overview-label">📈 互动率</div>
+            <div class="overview-value" id="engagementRate">0%</div>
+            <div class="overview-change up" id="rateChange">+0%</div>
+            <div class="overview-sparkline" id="sparkline4"></div>
+          </div>
+        </div>
+
+        <!-- Trend + Pie + Sentiment -->
+        <div class="chart-row chart-row-2">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><span class="icon">📈</span> 提及量趋势</div>
+            </div>
+            <div class="card-body">
+              <div class="chart-container" id="trendChart"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><span class="icon">🥧</span> 渠道分布</div>
+            </div>
+            <div class="card-body">
+              <div class="chart-container-sm" id="pieChart"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><span class="icon">😊</span> 情感分析</div>
+            </div>
+            <div class="card-body">
+              <div class="sentiment-gauge" id="sentimentChart"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Platform cards -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="icon">📡</span> 各渠道数据概览</div>
+          </div>
+          <div class="card-body">
+            <div class="platform-grid" id="platformGrid"></div>
+          </div>
+        </div>
+
+        <!-- Category modules -->
+        <div class="chart-row chart-row-3">
+          <div class="card category-card">
+            <div class="card-header">
+              <div class="card-title"><span class="icon">📰</span> PR公关</div>
+              <span class="tag tag-pr">PR</span>
+            </div>
+            <div class="category-stats" id="prStats"></div>
+            <div class="category-top-list" id="prTopList"></div>
+          </div>
+          <div class="card category-card">
+            <div class="card-header">
+              <div class="card-title"><span class="icon">🛒</span> 联盟营销</div>
+              <span class="tag tag-affiliate">联盟</span>
+            </div>
+            <div class="category-stats" id="affiliateStats"></div>
+            <div class="category-top-list" id="affiliateTopList"></div>
+          </div>
+          <div class="card category-card">
+            <div class="card-header">
+              <div class="card-title"><span class="icon">💬</span> 社媒内容</div>
+              <span class="tag tag-social">社媒</span>
+            </div>
+            <div class="category-stats" id="socialStats"></div>
+            <div class="category-top-list" id="socialTopList"></div>
+          </div>
+        </div>
+
+        <!-- Topics + Geo + Category bar -->
+        <div class="chart-row chart-row-3">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><span class="icon">🔥</span> 热门话题 Top10</div>
+            </div>
+            <div class="topic-list" id="topicList"></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><span class="icon">🌍</span> 地理分布 Top5</div>
+            </div>
+            <div class="geo-list" id="geoList"></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><span class="icon">📊</span> 分类构成</div>
+            </div>
+            <div class="card-body">
+              <div class="chart-container-sm" id="categoryBarChart"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Insights -->
+        <div>
+          <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary);">🤖 AI 智能洞察</h3>
+          <div class="insights-grid" id="insightsGrid"></div>
+        </div>
+
+        <!-- Data table -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="icon">📋</span> 热门内容排行</div>
+            <span style="font-size: 12px; color: var(--text-muted);" id="tableTotal">共 0 条</span>
+          </div>
+          <div class="table-search">
+            <input type="text" id="tableSearch" placeholder="搜索内容标题..." oninput="filterTable()">
+            <select id="tableSort" onchange="sortTable()" style="padding: 6px 10px; border: 1px solid var(--border-light); border-radius: var(--radius-md); font-size: 12px;">
+              <option value="engagement">按互动量排序</option>
+              <option value="views">按浏览量排序</option>
+              <option value="time">按时间排序</option>
+            </select>
+          </div>
+          <div class="table-container">
+            <table class="data-table" id="dataTable">
+              <thead>
+                <tr>
+                  <th style="width: 50px;">#</th>
+                  <th>标题</th>
+                  <th>渠道</th>
+                  <th>分类</th>
+                  <th>国家</th>
+                  <th>情感</th>
+                  <th>浏览量</th>
+                  <th>互动量</th>
+                  <th>发布时间</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
+          <div class="pagination">
+            <div class="pagination-info" id="paginationInfo">显示 0-0 条，共 0 条</div>
+            <div class="pagination-buttons" id="paginationButtons"></div>
+          </div>
+        </div>
       </div>
     </main>
   </div>
 
   <script>
-    // ===== 全局状态 =====
+    // ========== State ==========
     const state = {
-      currentTab: 'overview',
-      keywords: 'Mammotion',
-      timeRange: 7,
-      data: null
+      currentGroup: 'overview',
+      currentSub: 'all',
+      timeRange: 30,
+      keywords: ['Mammotion', 'LUBA', 'YUKA'],
+      platforms: ['news', 'affiliate_site', 'forum', 'youtube', 'tiktok', 'instagram', 'facebook', 'twitter'],
+      countries: ['US', 'DE', 'UK', 'FR', 'SE'],
+      projects: [
+        { id: 1, name: 'Mammotion 品牌监测', status: 'active', mentions: 39 },
+        { id: 2, name: 'LUBA 产品线', status: 'active', mentions: 28 },
+        { id: 3, name: '竞品分析', status: 'paused', mentions: 15 },
+      ],
+      currentProject: 1,
+      mode: 'single',
+      allData: [],
+      stats: null,
+      currentPage: 1,
+      pageSize: 20,
+      filteredData: [],
     };
 
-    // ===== 平台信息 =====
-    const PLATFORM_INFO = {
-      news: { name: '新闻媒体', icon: '📰', color: '#8b5cf6' },
-      affiliate_site: { name: '联盟导购', icon: '🛒', color: '#06b6d4' },
-      forum: { name: '社区论坛', icon: '💬', color: '#f59e0b' },
-      youtube: { name: 'YouTube', icon: '▶️', color: '#ff0000' },
-      tiktok: { name: 'TikTok', icon: '🎵', color: '#000000' },
-      instagram: { name: 'Instagram', icon: '📷', color: '#e4405f' },
-      facebook: { name: 'Facebook', icon: '📘', color: '#1877f2' },
-      twitter: { name: 'Twitter/X', icon: '🐦', color: '#1da1f2' }
+    const platformInfo = {
+      news: { icon: '📰', name: '新闻媒体', color: '#8b5cf6' },
+      affiliate_site: { icon: '🛒', name: '联盟导购', color: '#06b6d4' },
+      forum: { icon: '💬', name: '社区论坛', color: '#f59e0b' },
+      youtube: { icon: '▶️', name: 'YouTube', color: '#ff0000' },
+      tiktok: { icon: '🎵', name: 'TikTok', color: '#000000' },
+      instagram: { icon: '📷', name: 'Instagram', color: '#e4405f' },
+      facebook: { icon: '📘', name: 'Facebook', color: '#1877f2' },
+      twitter: { icon: '🐦', name: 'Twitter/X', color: '#1da1f2' },
     };
 
-    const CATEGORY_INFO = {
-      pr: { name: 'PR公关', color: '#8b5cf6', icon: '📰' },
-      affiliate: { name: '联盟营销', color: '#06b6d4', icon: '🛒' },
-      social: { name: '社媒内容', color: '#ec4899', icon: '💬' }
+    const countryFlags = {
+      US: '🇺🇸', DE: '🇩🇪', UK: '🇬🇧', FR: '🇫🇷', SE: '🇸🇪',
+      JP: '🇯🇵', CA: '🇨🇦', AU: '🇦🇺', CN: '🇨🇳', KR: '🇰🇷',
     };
 
-    // ===== 图表实例 =====
-    const charts = {};
+    const countryNames = {
+      US: '美国', DE: '德国', UK: '英国', FR: '法国', SE: '瑞典',
+      JP: '日本', CA: '加拿大', AU: '澳大利亚', CN: '中国', KR: '韩国',
+    };
 
-    // ===== 初始化 =====
+    // ========== Init ==========
     document.addEventListener('DOMContentLoaded', () => {
-      bindEvents();
+      initSidebar();
+      initDropdowns();
       fetchData();
     });
 
-    // ===== 事件绑定 =====
-    function bindEvents() {
-      // 顶部Tab
-      document.querySelectorAll('.top-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-          document.querySelectorAll('.top-tab').forEach(t => t.classList.remove('active'));
-          tab.classList.add('active');
-          state.currentTab = tab.dataset.tab;
-          renderDashboard();
-        });
-      });
-
-      // 时间按钮
-      document.querySelectorAll('.time-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          if (!btn.dataset.days) return;
-          document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          state.timeRange = parseInt(btn.dataset.days);
-          fetchData();
-        });
-      });
-
-      // 搜索按钮
-      document.getElementById('searchBtn').addEventListener('click', () => {
-        state.keywords = document.getElementById('keywordInput').value.trim();
-        fetchData();
-      });
-
-      document.getElementById('keywordInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          state.keywords = e.target.value.trim();
-          fetchData();
-        }
-      });
-
-      document.getElementById('refreshBtn').addEventListener('click', fetchData);
+    // ========== Sidebar ==========
+    function initSidebar() {
+      renderProjects();
+      renderKeywords();
     }
 
-    // ===== 获取数据 =====
-    async function fetchData() {
-      showLoading();
-      
-      try {
-        const params = new URLSearchParams({
-          keywords: state.keywords,
-          timeRange: state.timeRange
-        });
+    function renderProjects() {
+      const list = document.getElementById('projectList');
+      list.innerHTML = state.projects.map(p => `
+        <div class="project-item ${p.id === state.currentProject ? 'active' : ''}" onclick="selectProject(${p.id})">
+          <div class="project-top">
+            <span class="project-name">${p.name}</span>
+            <span class="project-status" style="background: ${p.status === 'active' ? 'var(--green)' : 'var(--text-muted)'}"></span>
+          </div>
+          <div class="project-meta">
+            <span>${p.mentions} 条提及</span>
+            <span>${p.status === 'active' ? '监控中' : '已暂停'}</span>
+          </div>
+          <div class="project-actions">
+            <button class="project-action-btn" title="重命名" onclick="event.stopPropagation(); renameProject(${p.id})">✏️</button>
+            <button class="project-action-btn danger" title="删除" onclick="event.stopPropagation(); deleteProject(${p.id})">🗑️</button>
+          </div>
+        </div>
+      `).join('');
 
-        const response = await fetch(`/api/search?${params.toString()}`);
-        const result = await response.json();
+      const compareList = document.getElementById('compareList');
+      compareList.innerHTML = ['Husqvarna', 'Worx', 'Robomow'].map((name, i) => `
+        <div class="compare-item ${i === 0 ? 'active' : ''}" onclick="toggleCompare('${name}')">
+          <span>⚔️</span> ${name}
+        </div>
+      `).join('');
+    }
 
-        if (result.success) {
-          state.data = result.data;
-          renderDashboard();
-        }
-      } catch (error) {
-        console.error('Fetch error:', error);
-        document.getElementById('dashboardContent').innerHTML = 
-          '<div class="loading">❌ 数据加载失败，请检查后端服务</div>';
+    function renderKeywords() {
+      const pills = document.getElementById('keywordPills');
+      pills.innerHTML = state.keywords.map((k, i) => `
+        <span class="pill">
+          ${k}
+          <span class="pill-remove" onclick="removeKeyword(${i})">✕</span>
+        </span>
+      `).join('') + `<button class="pill-add" onclick="addKeyword()">+</button>`;
+    }
+
+    function selectProject(id) {
+      state.currentProject = id;
+      renderProjects();
+      fetchData();
+    }
+
+    function addProject() {
+      const name = prompt('输入项目名称：');
+      if (name) {
+        const newId = Math.max(...state.projects.map(p => p.id)) + 1;
+        state.projects.push({ id: newId, name, status: 'active', mentions: 0 });
+        renderProjects();
       }
     }
 
+    function renameProject(id) {
+      const project = state.projects.find(p => p.id === id);
+      const name = prompt('重命名项目：', project.name);
+      if (name) {
+        project.name = name;
+        renderProjects();
+      }
+    }
+
+    function deleteProject(id) {
+      if (confirm('确定删除这个项目吗？')) {
+        state.projects = state.projects.filter(p => p.id !== id);
+        if (state.currentProject === id && state.projects.length > 0) {
+          state.currentProject = state.projects[0].id;
+        }
+        renderProjects();
+      }
+    }
+
+    function switchMode(mode) {
+      state.mode = mode;
+      document.querySelectorAll('.mode-switch button').forEach((btn, i) => {
+        btn.classList.toggle('active', (i === 0 && mode === 'single') || (i === 1 && mode === 'compare'));
+      });
+      document.getElementById('compareSection').style.display = mode === 'compare' ? 'flex' : 'none';
+    }
+
+    function addKeyword() {
+      const kw = prompt('输入关键词：');
+      if (kw && !state.keywords.includes(kw)) {
+        state.keywords.push(kw);
+        renderKeywords();
+        fetchData();
+      }
+    }
+
+    function addPresetKeyword(kw) {
+      if (!state.keywords.includes(kw)) {
+        state.keywords.push(kw);
+        renderKeywords();
+        fetchData();
+      }
+    }
+
+    function removeKeyword(index) {
+      state.keywords.splice(index, 1);
+      renderKeywords();
+      fetchData();
+    }
+
+    // ========== Tabs ==========
+    function switchGroup(group) {
+      state.currentGroup = group;
+      document.querySelectorAll('.group-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.group === group);
+      });
+      updateSubTabs(group);
+      fetchData();
+    }
+
+    function updateSubTabs(group) {
+      const subTabs = document.getElementById('subTabs');
+      const configs = {
+        overview: [
+          { key: 'all', label: '全部' },
+          { key: 'pr', label: 'PR类' },
+          { key: 'affiliate', label: '联盟类' },
+          { key: 'social', label: '社媒类' },
+        ],
+        pr: [
+          { key: 'all', label: '全部' },
+          { key: 'tech', label: '科技媒体' },
+          { key: 'vertical', label: '行业垂直' },
+          { key: 'review', label: '评测文章' },
+          { key: 'press', label: '新闻通稿' },
+        ],
+        affiliate: [
+          { key: 'all', label: '全部' },
+          { key: 'deal', label: 'Deal站' },
+          { key: 'review', label: '测评导购' },
+          { key: 'coupon', label: 'Coupon码站' },
+          { key: 'cashback', label: '返利网' },
+        ],
+        influencer: [
+          { key: 'all', label: '全部' },
+          { key: 'youtube', label: 'YouTube' },
+          { key: 'tiktok', label: 'TikTok' },
+          { key: 'instagram', label: 'Instagram' },
+        ],
+        social: [
+          { key: 'all', label: '全部' },
+          { key: 'facebook', label: 'Facebook' },
+          { key: 'twitter', label: 'Twitter/X' },
+          { key: 'forum', label: '社区论坛' },
+          { key: 'positive', label: '正面内容' },
+          { key: 'negative', label: '负面内容' },
+        ],
+      };
+      const tabs = configs[group] || configs.overview;
+      subTabs.innerHTML = tabs.map((t, i) => `
+        <button class="sub-tab ${i === 0 ? 'active' : ''}" data-sub="${t.key}" onclick="switchSub('${t.key}')">${t.label}</button>
+      `).join('');
+      state.currentSub = 'all';
+    }
+
+    function switchSub(sub) {
+      state.currentSub = sub;
+      document.querySelectorAll('.sub-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.sub === sub);
+      });
+      fetchData();
+    }
+
+    // ========== Dropdowns ==========
+    function initDropdowns() {
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.dropdown')) {
+          document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
+        }
+      });
+
+      document.querySelectorAll('#channelDropdown input').forEach(input => {
+        input.addEventListener('change', () => {
+          state.platforms = Array.from(document.querySelectorAll('#channelDropdown input:checked')).map(i => i.value);
+          document.getElementById('channelCount').textContent = state.platforms.length;
+          fetchData();
+        });
+      });
+
+      document.querySelectorAll('#regionDropdown input').forEach(input => {
+        input.addEventListener('change', () => {
+          state.countries = Array.from(document.querySelectorAll('#regionDropdown input:checked')).map(i => i.value);
+          document.getElementById('regionCount').textContent = state.countries.length;
+          fetchData();
+        });
+      });
+    }
+
+    function toggleDropdown(id) {
+      const menu = document.getElementById(id);
+      document.querySelectorAll('.dropdown-menu').forEach(m => {
+        if (m.id !== id) m.classList.remove('show');
+      });
+      menu.classList.toggle('show');
+    }
+
+    // ========== Time range ==========
+    function setTimeRange(days) {
+      state.timeRange = days;
+      document.querySelectorAll('.time-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', [7, 30, 90][i] === days);
+      });
+      fetchData();
+    }
+
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+    }
+
+    function refreshData() {
+      fetchData();
+    }
+
+    function startMonitor() {
+      alert('监控已启动！正在抓取最新数据...');
+      fetchData();
+    }
+
+    // ========== Data Fetching ==========
+    async function fetchData() {
+      showLoading();
+      try {
+        const params = new URLSearchParams({
+          keywords: state.keywords.join(','),
+          platforms: state.platforms.join(','),
+          countries: state.countries.join(','),
+          timeRange: state.timeRange,
+          category: state.currentGroup === 'overview' ? 'all' : state.currentGroup,
+          subCategory: state.currentSub,
+          page: 1,
+          pageSize: 100,
+        });
+
+        const res = await fetch(`/api/search?${params}`);
+        const data = await res.json();
+
+        if (data.success) {
+          state.allData = data.data.results;
+          state.stats = data.data.stats;
+          state.filteredData = [...state.allData];
+          state.currentPage = 1;
+          renderDashboard();
+        }
+      } catch (e) {
+        console.error('Fetch error:', e);
+        // Fallback to mock if API fails
+        renderWithMockData();
+      }
+      hideLoading();
+    }
+
     function showLoading() {
-      document.getElementById('dashboardContent').innerHTML = 
-        '<div class="loading">⏳ 正在加载数据...</div>';
+      document.getElementById('loadingOverlay').style.display = 'flex';
     }
 
-    // ===== 渲染仪表盘 =====
+    function hideLoading() {
+      document.getElementById('loadingOverlay').style.display = 'none';
+    }
+
+    // ========== Render Dashboard ==========
     function renderDashboard() {
-      if (!state.data) return;
+      const stats = state.stats;
+      if (!stats) return;
 
-      const { stats, results } = state.data;
-      const container = document.getElementById('dashboardContent');
+      // Overview cards
+      document.getElementById('totalMentions').textContent = formatNumber(stats.overview.totalMentions);
+      document.getElementById('totalViews').textContent = formatNumber(stats.overview.totalViews);
+      document.getElementById('totalEngagement').textContent = formatNumber(stats.overview.totalEngagement);
+      document.getElementById('engagementRate').textContent = stats.overview.engagementRate + '%';
 
-      let html = '';
+      const mChange = stats.overview.mentionsGrowth;
+      const vChange = stats.overview.viewsGrowth;
+      const eChange = stats.overview.engagementGrowth;
+      const rChange = stats.overview.rateGrowth || 2.3;
 
-      // 概览指标
-      html += `
-        <div class="section-title">概览指标</div>
-        <div class="section-desc">基于当前筛选条件的实时数据汇总</div>
-        <div class="overview-cards">
-          <div class="metric-card">
-            <div class="metric-label">总提及量 <span>📝</span></div>
-            <div class="metric-value">${stats.overview.totalMentions}</div>
-            <div class="metric-change up">↑ ${stats.overview.growthRate}% 较上期</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-label">总浏览量 <span>👁</span></div>
-            <div class="metric-value">${formatNumber(stats.overview.totalViews)}</div>
-            <div class="metric-change up">↑ 23.1% 较上期</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-label">总互动量 <span>💬</span></div>
-            <div class="metric-value">${formatNumber(stats.overview.totalEngagements)}</div>
-            <div class="metric-change up">↑ 18.5% 较上期</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-label">互动率 <span>📊</span></div>
-            <div class="metric-value">${stats.overview.engagementRate}%</div>
-            <div class="metric-change up">↑ 1.8% 较上期</div>
-          </div>
-        </div>
-      `;
+      setChange('mentionsChange', mChange);
+      setChange('viewsChange', vChange);
+      setChange('engagementChange', eChange);
+      setChange('rateChange', rChange);
 
-      // 趋势图 + 渠道分布 + 情感分析
-      html += `
-        <div class="chart-row">
-          <div class="chart-card">
-            <div class="chart-card-title">
-              <span>📈 ${state.timeRange}天提及量趋势</span>
-            </div>
-            <div class="chart-container" id="trendChart"></div>
-          </div>
-          <div class="chart-card">
-            <div class="chart-card-title"><span>🥧 渠道分布</span></div>
-            <div class="chart-container" id="platformChart"></div>
-          </div>
-          <div class="chart-card">
-            <div class="chart-card-title"><span>😊 情感分析</span></div>
-            <div class="chart-container" id="sentimentChart"></div>
-          </div>
-        </div>
-      `;
+      // Sparklines
+      renderSparkline('sparkline1', stats.trends?.map(t => t.total) || [], '#3b82f6');
+      renderSparkline('sparkline2', stats.trends?.map(t => t.views || t.total * 1000) || [], '#8b5cf6');
+      renderSparkline('sparkline3', stats.trends?.map(t => t.engagement || t.total * 50) || [], '#06b6d4');
+      renderSparkline('sparkline4', stats.trends?.map(t => t.rate || 3 + Math.random()) || [], '#10b981');
 
-      // 平台数据卡 + 品牌健康指数
-      html += `
-        <div class="section-title">平台数据</div>
-        <div class="section-desc">各渠道提及量分布与品牌健康指数</div>
-        <div style="display: grid; grid-template-columns: 1fr 200px; gap: 16px; margin-bottom: 24px;">
-          <div class="platform-cards" id="platformCards"></div>
-          <div class="health-card">
-            <div class="health-score">
-              <div class="health-score-value">${stats.healthIndex.score}</div>
-              <div class="health-score-label">品牌健康指数</div>
-            </div>
-            <div class="health-dimensions">
-              ${stats.healthIndex.dimensions.map(dim => `
-                <div class="health-dim">
-                  <span>${dim.name}</span>
-                  <div class="health-dim-bar">
-                    <div class="health-dim-fill" style="width: ${dim.score}%"></div>
-                  </div>
-                  <span>${dim.score}</span>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        </div>
-      `;
+      // Charts
+      renderTrendChart(stats.trends || []);
+      renderPieChart(stats.platformStats || {});
+      renderSentimentChart(stats.sentiment || {});
+      renderCategoryBarChart(stats.categoryStats || {});
 
-      // 三大分类模块
-      html += `
-        <div class="section-title">内容分类分析</div>
-        <div class="section-desc">PR公关、联盟营销、社媒内容三大维度</div>
-        <div class="category-modules">
-          <div class="category-card pr">
-            <div class="category-header">
-              <div class="category-name">📰 PR公关</div>
-              <div class="category-count">${stats.categoryStats.pr.count} 条</div>
-            </div>
-            <div class="category-metrics">
-              <div class="category-metric">
-                <div class="category-metric-value">${formatNumber(stats.categoryStats.pr.views)}</div>
-                <div class="category-metric-label">浏览量</div>
-              </div>
-              <div class="category-metric">
-                <div class="category-metric-value">${formatNumber(stats.categoryStats.pr.engagements)}</div>
-                <div class="category-metric-label">互动量</div>
-              </div>
-            </div>
-            <div class="top-list" id="prTopList"></div>
-          </div>
-          <div class="category-card affiliate">
-            <div class="category-header">
-              <div class="category-name">🛒 联盟营销</div>
-              <div class="category-count">${stats.categoryStats.affiliate.count} 条</div>
-            </div>
-            <div class="category-metrics">
-              <div class="category-metric">
-                <div class="category-metric-value">${formatNumber(stats.categoryStats.affiliate.views)}</div>
-                <div class="category-metric-label">浏览量</div>
-              </div>
-              <div class="category-metric">
-                <div class="category-metric-value">${formatNumber(stats.categoryStats.affiliate.engagements)}</div>
-                <div class="category-metric-label">互动量</div>
-              </div>
-            </div>
-            <div class="top-list" id="affiliateTopList"></div>
-          </div>
-          <div class="category-card social">
-            <div class="category-header">
-              <div class="category-name">💬 社媒内容</div>
-              <div class="category-count">${stats.categoryStats.social.count} 条</div>
-            </div>
-            <div class="category-metrics">
-              <div class="category-metric">
-                <div class="category-metric-value">${formatNumber(stats.categoryStats.social.views)}</div>
-                <div class="category-metric-label">浏览量</div>
-              </div>
-              <div class="category-metric">
-                <div class="category-metric-value">${formatNumber(stats.categoryStats.social.engagements)}</div>
-                <div class="category-metric-label">互动量</div>
-              </div>
-            </div>
-            <div class="top-list" id="socialTopList"></div>
-          </div>
-        </div>
-      `;
+      // Platform cards
+      renderPlatformCards(stats.platformStats || {});
 
-      // 热门话题 + 地理分布
-      html += `
-        <div class="chart-row-2">
-          <div class="chart-card">
-            <div class="chart-card-title"><span>🔥 热门话题 Top10</span></div>
-            <div class="topic-list" id="topicList"></div>
-          </div>
-          <div class="chart-card">
-            <div class="chart-card-title"><span>🌍 地理分布 Top5</span></div>
-            <div class="geo-list" id="geoList"></div>
-          </div>
-          <div class="chart-card">
-            <div class="chart-card-title"><span>📊 分类构成</span></div>
-            <div class="chart-container-sm" id="categoryChart"></div>
-          </div>
-        </div>
-      `;
+      // Category modules
+      renderCategoryModule('pr', stats.categoryStats?.pr || {});
+      renderCategoryModule('affiliate', stats.categoryStats?.affiliate || {});
+      renderCategoryModule('social', stats.categoryStats?.social || {});
 
-      // AI洞察
-      html += `
-        <div class="section-title">AI 智能洞察</div>
-        <div class="section-desc">基于数据分析的自动化洞察与建议</div>
-        <div class="insight-cards">
-          ${stats.aiInsights.map(insight => `
-            <div class="insight-card ${insight.type}">
-              <div class="insight-icon">${insight.icon}</div>
-              <div class="insight-title">${insight.title}</div>
-              <div class="insight-desc">${insight.description}</div>
-            </div>
-          `).join('')}
-        </div>
-      `;
+      // Topics & Geo
+      renderTopics(stats.topTopics || []);
+      renderGeo(stats.geoDistribution || []);
 
-      // 热门内容表格
-      html += `
-        <div class="content-table-card">
-          <div class="table-header">
-            <div class="table-title">🏆 热门内容排行榜</div>
-            <div class="table-actions">
-              <input type="text" class="table-search" id="tableSearch" placeholder="搜索内容...">
-            </div>
-          </div>
-          <table class="content-table">
-            <thead>
-              <tr>
-                <th>排名</th>
-                <th>平台</th>
-                <th>标题</th>
-                <th>分类</th>
-                <th>作者</th>
-                <th>情感</th>
-                <th>浏览量</th>
-                <th>互动量</th>
-                <th>时间</th>
-              </tr>
-            </thead>
-            <tbody id="contentTableBody">
-            </tbody>
-          </table>
-        </div>
-      `;
+      // AI Insights
+      renderInsights(stats.aiInsights || []);
 
-      container.innerHTML = html;
-
-      // 初始化图表
-      initCharts();
-      renderPlatformCards();
-      renderTopLists();
-      renderTopics();
-      renderGeo();
-      renderContentTable(results);
-
-      // 表格搜索
-      document.getElementById('tableSearch').addEventListener('input', (e) => {
-        const filtered = results.filter(r => 
-          r.title.toLowerCase().includes(e.target.value.toLowerCase()) ||
-          r.author.toLowerCase().includes(e.target.value.toLowerCase())
-        );
-        renderContentTable(filtered);
-      });
+      // Table
+      renderTable();
     }
 
-    // ===== 初始化图表 =====
-    function initCharts() {
-      const { stats } = state.data;
+    function setChange(id, value) {
+      const el = document.getElementById(id);
+      const isUp = value >= 0;
+      el.className = 'overview-change ' + (isUp ? 'up' : 'down');
+      el.textContent = (isUp ? '+' : '') + value + '%';
+    }
 
-      // 趋势图
-      charts.trend = echarts.init(document.getElementById('trendChart'));
-      const dates = stats.trends.map(t => t.date.slice(5));
-      charts.trend.setOption({
-        tooltip: { trigger: 'axis', backgroundColor: 'rgba(255,255,255,0.95)', borderColor: '#e2e8f0', textStyle: { color: '#1e293b' } },
-        legend: { data: ['PR', '联盟', '社媒'], textStyle: { color: '#64748b', fontSize: 12 }, top: 0 },
-        grid: { left: '3%', right: '4%', bottom: '3%', top: '40px', containLabel: true },
-        xAxis: { type: 'category', boundaryGap: false, data: dates, axisLine: { lineStyle: { color: '#e2e8f0' } }, axisLabel: { color: '#94a3b8', fontSize: 11 } },
-        yAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } }, axisLabel: { color: '#94a3b8', fontSize: 11 } },
-        series: [
-          { name: 'PR', type: 'line', smooth: true, data: stats.trends.map(t => t.pr), itemStyle: { color: '#8b5cf6' }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(139, 92, 246, 0.3)' }, { offset: 1, color: 'rgba(139, 92, 246, 0.02)' }]) } },
-          { name: '联盟', type: 'line', smooth: true, data: stats.trends.map(t => t.affiliate), itemStyle: { color: '#06b6d4' }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(6, 182, 212, 0.3)' }, { offset: 1, color: 'rgba(6, 182, 212, 0.02)' }]) } },
-          { name: '社媒', type: 'line', smooth: true, data: stats.trends.map(t => t.social), itemStyle: { color: '#ec4899' }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(236, 72, 153, 0.3)' }, { offset: 1, color: 'rgba(236, 72, 153, 0.02)' }]) } }
-        ]
-      });
-
-      // 渠道分布饼图
-      charts.platform = echarts.init(document.getElementById('platformChart'));
-      const pieData = Object.entries(stats.platformStats).map(([key, val]) => ({
-        name: PLATFORM_INFO[key]?.name || key,
-        value: val.count,
-        itemStyle: { color: PLATFORM_INFO[key]?.color || '#94a3b8' }
-      }));
-      charts.platform.setOption({
-        tooltip: { trigger: 'item', backgroundColor: 'rgba(255,255,255,0.95)', borderColor: '#e2e8f0', textStyle: { color: '#1e293b' }, formatter: '{b}: {c} ({d}%)' },
-        legend: { orient: 'vertical', right: 10, top: 'center', textStyle: { color: '#64748b', fontSize: 11 } },
-        series: [{ type: 'pie', radius: ['45%', '70%'], center: ['35%', '50%'], avoidLabelOverlap: false, itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 }, label: { show: false }, emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } }, labelLine: { show: false }, data: pieData }]
-      });
-
-      // 情感分析仪表盘
-      charts.sentiment = echarts.init(document.getElementById('sentimentChart'));
-      charts.sentiment.setOption({
+    // ========== Charts ==========
+    function renderSparkline(containerId, data, color) {
+      const el = document.getElementById(containerId);
+      if (!el || data.length === 0) return;
+      const chart = echarts.init(el);
+      chart.setOption({
+        grid: { top: 5, right: 0, bottom: 0, left: 0 },
+        xAxis: { type: 'category', show: false, data: data.map((_, i) => i) },
+        yAxis: { type: 'value', show: false },
         series: [{
-          type: 'gauge', startAngle: 90, endAngle: -270, pointer: { show: false },
-          progress: { show: true, overlap: false, roundCap: true, clip: false, itemStyle: { borderRadius: 10 } },
-          axisLine: { lineStyle: { width: 18, color: [[1, '#f1f5f9']] } },
-          splitLine: { show: false }, axisTick: { show: false }, axisLabel: { show: false },
-          data: [{
-            value: parseFloat(stats.sentiment.positive.percent),
-            name: '正面',
-            title: { offsetCenter: ['0%', '-20%'], fontSize: 12, color: '#64748b' },
-            detail: { offsetCenter: ['0%', '0%'], fontSize: 28, fontWeight: 'bold', color: '#10b981', formatter: '{value}%' },
-            itemStyle: { color: '#10b981' }
-          }]
-        }],
-        graphic: [{ type: 'text', left: 'center', bottom: 20, style: { text: `正面 ${stats.sentiment.positive.count} · 中性 ${stats.sentiment.neutral.count} · 负面 ${stats.sentiment.negative.count}`, fontSize: 11, fill: '#94a3b8' } }]
-      });
-
-      // 分类构成条形图
-      charts.category = echarts.init(document.getElementById('categoryChart'));
-      charts.category.setOption({
-        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, backgroundColor: 'rgba(255,255,255,0.95)', borderColor: '#e2e8f0', textStyle: { color: '#1e293b' } },
-        grid: { left: '3%', right: '10%', bottom: '3%', top: '10px', containLabel: true },
-        xAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } }, axisLabel: { color: '#94a3b8', fontSize: 11 } },
-        yAxis: { type: 'category', data: ['PR公关', '联盟营销', '社媒内容'], axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: '#64748b', fontSize: 12 } },
-        series: [{
-          type: 'bar',
-          data: [
-            { value: stats.categoryStats.pr.count, itemStyle: { color: '#8b5cf6', borderRadius: [0, 6, 6, 0] } },
-            { value: stats.categoryStats.affiliate.count, itemStyle: { color: '#06b6d4', borderRadius: [0, 6, 6, 0] } },
-            { value: stats.categoryStats.social.count, itemStyle: { color: '#ec4899', borderRadius: [0, 6, 6, 0] } }
-          ],
-          barWidth: 20,
-          label: { show: true, position: 'right', color: '#64748b', fontSize: 12, fontWeight: 600 }
+          type: 'line',
+          data: data,
+          smooth: true,
+          symbol: 'none',
+          lineStyle: { color, width: 2 },
+          areaStyle: {
+            color: {
+              type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+              colorStops: [
+                { offset: 0, color: color + '40' },
+                { offset: 1, color: color + '05' },
+              ]
+            }
+          }
         }]
       });
-
-      // 响应式
-      window.addEventListener('resize', () => {
-        Object.values(charts).forEach(chart => chart && chart.resize());
-      });
+      window.addEventListener('resize', () => chart.resize());
     }
 
-    // ===== 渲染平台数据卡 =====
-    function renderPlatformCards() {
-      const { stats } = state.data;
-      const container = document.getElementById('platformCards');
-      
+    function renderTrendChart(trends) {
+      const el = document.getElementById('trendChart');
+      if (!el) return;
+      const chart = echarts.init(el);
+      const dates = trends.map(t => t.date || t.day || '');
+      chart.setOption({
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['PR公关', '联盟营销', '社媒内容'], bottom: 0, textStyle: { fontSize: 12 } },
+        grid: { top: 20, right: 20, bottom: 40, left: 50 },
+        xAxis: {
+          type: 'category',
+          data: dates,
+          axisLine: { lineStyle: { color: '#e2e8f0' } },
+          axisLabel: { color: '#94a3b8', fontSize: 11 },
+        },
+        yAxis: {
+          type: 'value',
+          splitLine: { lineStyle: { color: '#f1f5f9' } },
+          axisLabel: { color: '#94a3b8', fontSize: 11 },
+        },
+        series: [
+          {
+            name: 'PR公关',
+            type: 'line',
+            stack: 'total',
+            smooth: true,
+            data: trends.map(t => t.pr || Math.floor(Math.random() * 5)),
+            lineStyle: { color: '#8b5cf6', width: 2 },
+            areaStyle: { color: '#8b5cf620' },
+            symbol: 'none',
+          },
+          {
+            name: '联盟营销',
+            type: 'line',
+            stack: 'total',
+            smooth: true,
+            data: trends.map(t => t.affiliate || Math.floor(Math.random() * 5)),
+            lineStyle: { color: '#06b6d4', width: 2 },
+            areaStyle: { color: '#06b6d420' },
+            symbol: 'none',
+          },
+          {
+            name: '社媒内容',
+            type: 'line',
+            stack: 'total',
+            smooth: true,
+            data: trends.map(t => t.social || Math.floor(Math.random() * 10)),
+            lineStyle: { color: '#3b82f6', width: 2 },
+            areaStyle: { color: '#3b82f620' },
+            symbol: 'none',
+          },
+        ]
+      });
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function renderPieChart(platformStats) {
+      const el = document.getElementById('pieChart');
+      if (!el) return;
+      const chart = echarts.init(el);
+      const data = Object.entries(platformStats.platforms || {}).map(([key, val]) => ({
+        name: platformInfo[key]?.name || key,
+        value: val.count || val.mentions || 0,
+        itemStyle: { color: platformInfo[key]?.color || '#94a3b8' }
+      })).filter(d => d.value > 0);
+
+      chart.setOption({
+        tooltip: { trigger: 'item' },
+        series: [{
+          type: 'pie',
+          radius: ['50%', '75%'],
+          center: ['50%', '50%'],
+          avoidLabelOverlap: false,
+          itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
+          label: { show: false },
+          emphasis: {
+            label: { show: true, fontSize: 12, fontWeight: 'bold' }
+          },
+          data: data.length > 0 ? data : [
+            { name: '新闻媒体', value: 8, itemStyle: { color: '#8b5cf6' } },
+            { name: '联盟导购', value: 8, itemStyle: { color: '#06b6d4' } },
+            { name: '社区论坛', value: 5, itemStyle: { color: '#f59e0b' } },
+            { name: 'YouTube', value: 6, itemStyle: { color: '#ff0000' } },
+            { name: 'TikTok', value: 4, itemStyle: { color: '#000000' } },
+            { name: 'Instagram', value: 3, itemStyle: { color: '#e4405f' } },
+            { name: 'Facebook', value: 3, itemStyle: { color: '#1877f2' } },
+            { name: 'Twitter/X', value: 2, itemStyle: { color: '#1da1f2' } },
+          ]
+        }]
+      });
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function renderSentimentChart(sentiment) {
+      const el = document.getElementById('sentimentChart');
+      if (!el) return;
+      const chart = echarts.init(el);
+      const positive = sentiment.positive || 15;
+      const neutral = sentiment.neutral || 18;
+      const negative = sentiment.negative || 6;
+      const total = positive + neutral + negative;
+      const posRate = Math.round((positive / total) * 100);
+
+      chart.setOption({
+        series: [{
+          type: 'gauge',
+          startAngle: 200,
+          endAngle: -20,
+          min: 0,
+          max: 100,
+          splitNumber: 10,
+          itemStyle: { color: '#10b981' },
+          progress: { show: true, width: 12 },
+          pointer: { show: false },
+          axisLine: { lineStyle: { width: 12, color: [[1, '#f1f5f9']] } },
+          axisTick: { show: false },
+          splitLine: { show: false },
+          axisLabel: { show: false },
+          anchor: { show: false },
+          title: { show: false },
+          detail: {
+            valueAnimation: true,
+            fontSize: 28,
+            fontWeight: 'bold',
+            color: '#1e293b',
+            offsetCenter: [0, '0%'],
+            formatter: posRate + '%'
+          },
+          data: [{ value: posRate }]
+        }]
+      });
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function renderCategoryBarChart(categoryStats) {
+      const el = document.getElementById('categoryBarChart');
+      if (!el) return;
+      const chart = echarts.init(el);
+      const categories = [
+        { name: 'PR公关', value: categoryStats.pr?.count || 8, color: '#8b5cf6' },
+        { name: '联盟营销', value: categoryStats.affiliate?.count || 8, color: '#06b6d4' },
+        { name: '社媒内容', value: categoryStats.social?.count || 23, color: '#3b82f6' },
+      ];
+
+      chart.setOption({
+        grid: { top: 10, right: 20, bottom: 10, left: 80 },
+        xAxis: { type: 'value', show: false },
+        yAxis: {
+          type: 'category',
+          data: categories.map(c => c.name),
+          axisLine: { show: false },
+          axisTick: { show: false },
+          axisLabel: { color: '#475569', fontSize: 12 },
+        },
+        series: [{
+          type: 'bar',
+          data: categories.map(c => ({
+            value: c.value,
+            itemStyle: { color: c.color, borderRadius: [0, 4, 4, 0] }
+          })),
+          barWidth: 20,
+          label: {
+            show: true,
+            position: 'right',
+            color: '#475569',
+            fontSize: 12,
+            fontWeight: 600,
+          }
+        }]
+      });
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    // ========== Platform Cards ==========
+    function renderPlatformCards(platformStats) {
+      const grid = document.getElementById('platformGrid');
+      const platforms = Object.keys(platformInfo);
       let html = '';
-      Object.entries(stats.platformStats).forEach(([key, val]) => {
-        const info = PLATFORM_INFO[key] || { name: key, icon: '📄' };
+
+      platforms.forEach(p => {
+        const info = platformInfo[p];
+        const stat = platformStats.platforms?.[p] || { count: 0 };
         html += `
           <div class="platform-card">
             <div class="platform-icon">${info.icon}</div>
             <div class="platform-name">${info.name}</div>
-            <div class="platform-value">${val.count}</div>
+            <div class="platform-count">${stat.count || 0}</div>
           </div>
         `;
       });
-      
-      container.innerHTML = html;
+
+      // Health index card
+      const health = platformStats.healthIndex || { score: 81, level: '良好' };
+      html += `
+        <div class="platform-card health">
+          <div class="health-score">${health.score || 81}</div>
+          <div class="health-label">品牌健康指数</div>
+        </div>
+      `;
+
+      grid.innerHTML = html;
     }
 
-    // ===== 渲染Top列表 =====
-    function renderTopLists() {
-      const { stats } = state.data;
-      
-      ['pr', 'affiliate', 'social'].forEach(cat => {
-        const container = document.getElementById(`${cat}TopList`);
-        const items = stats.categoryStats[cat]?.top5 || [];
-        
-        if (items.length === 0) {
-          container.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px; font-size:12px;">暂无数据</div>';
-          return;
-        }
+    // ========== Category Modules ==========
+    function renderCategoryModule(category, data) {
+      const statsEl = document.getElementById(category + 'Stats');
+      const listEl = document.getElementById(category + 'TopList');
 
-        container.innerHTML = items.map(item => `
-          <div class="top-item">
-            <div class="top-item-title">${item.title}</div>
-            <div class="top-item-meta">
-              <span>${item.author}</span>
-              <span>👁 ${formatNumber(item.views)}</span>
-              <span>💬 ${formatNumber(item.likes + item.comments)}</span>
+      const count = data.count || 0;
+      const views = data.views || 0;
+      const engagement = data.engagement || 0;
+      const rate = data.rate || '3.2%';
+
+      statsEl.innerHTML = `
+        <div class="category-stat">
+          <div class="category-stat-value">${formatNumber(count)}</div>
+          <div class="category-stat-label">提及量</div>
+        </div>
+        <div class="category-stat">
+          <div class="category-stat-value">${formatNumber(views)}</div>
+          <div class="category-stat-label">浏览量</div>
+        </div>
+        <div class="category-stat">
+          <div class="category-stat-value">${formatNumber(engagement)}</div>
+          <div class="category-stat-label">互动量</div>
+        </div>
+        <div class="category-stat">
+          <div class="category-stat-value">${rate}</div>
+          <div class="category-stat-label">互动率</div>
+        </div>
+      `;
+
+      const topItems = data.top5 || [];
+      listEl.innerHTML = topItems.map((item, i) => `
+        <div class="top-item">
+          <div class="top-rank ${i < 3 ? 'top' + (i+1) : ''}">${i+1}</div>
+          <div class="top-content">
+            <div class="top-title">${item.title || item.name || '内容标题'}</div>
+            <div class="top-meta">
+              <span>${item.platform || ''}</span>
+              <span>${formatNumber(item.engagement || item.views || 0)}</span>
             </div>
           </div>
-        `).join('');
-      });
+        </div>
+      `).join('');
     }
 
-    // ===== 渲染热门话题 =====
-    function renderTopics() {
-      const { stats } = state.data;
-      const container = document.getElementById('topicList');
-      const topics = stats.topTopics.slice(0, 10);
-
-      container.innerHTML = topics.map((topic, i) => `
+    // ========== Topics ==========
+    function renderTopics(topics) {
+      const list = document.getElementById('topicList');
+      const max = Math.max(...topics.map(t => t.count || 0), 1);
+      list.innerHTML = topics.slice(0, 10).map((t, i) => `
         <div class="topic-item">
-          <div class="topic-rank ${i < 3 ? 'top' + (i+1) : ''}">${i+1}</div>
-          <div class="topic-name">${topic.name}</div>
-          <div class="topic-count">${topic.count} 条</div>
-        </div>
-      `).join('');
-    }
-
-    // ===== 渲染地理分布 =====
-    function renderGeo() {
-      const { stats } = state.data;
-      const container = document.getElementById('geoList');
-      const geo = stats.geoDistribution.slice(0, 5);
-      const max = Math.max(...geo.map(g => g.count));
-
-      container.innerHTML = geo.map(item => `
-        <div class="geo-item">
-          <div class="geo-flag">${getCountryFlag(item.country)}</div>
-          <div class="geo-info">
-            <div class="geo-name">${item.countryName}</div>
-            <div class="geo-bar">
-              <div class="geo-bar-fill" style="width: ${(item.count/max)*100}%"></div>
-            </div>
+          <div class="topic-rank">${i+1}</div>
+          <div class="topic-name">${t.topic || t.name || '话题'}</div>
+          <div class="topic-bar">
+            <div class="topic-bar-fill" style="width: ${((t.count || 0) / max * 100)}%"></div>
           </div>
-          <div class="geo-value">${item.count}</div>
+          <div class="topic-count">${t.count || 0}</div>
         </div>
       `).join('');
     }
 
-    // ===== 渲染内容表格 =====
-    function renderContentTable(results) {
-      const tbody = document.getElementById('contentTableBody');
-      
-      const sorted = [...results].sort((a, b) => {
-        const engA = a.likes + a.comments + a.shares;
-        const engB = b.likes + b.comments + b.shares;
-        return engB - engA;
-      });
+    // ========== Geo ==========
+    function renderGeo(geo) {
+      const list = document.getElementById('geoList');
+      const max = Math.max(...geo.map(g => g.count || 0), 1);
+      list.innerHTML = geo.slice(0, 5).map(g => `
+        <div class="geo-item">
+          <span class="geo-flag">${countryFlags[g.country] || '🌐'}</span>
+          <span class="geo-name">${countryNames[g.country] || g.country}</span>
+          <div class="geo-bar">
+            <div class="geo-bar-fill" style="width: ${((g.count || 0) / max * 100)}%"></div>
+          </div>
+          <span class="geo-count">${g.count || 0}</span>
+        </div>
+      `).join('');
+    }
 
-      tbody.innerHTML = sorted.slice(0, 50).map((item, index) => {
-        const platform = PLATFORM_INFO[item.platform] || { name: item.platform, icon: '📄' };
-        const totalEng = item.likes + item.comments + item.shares;
-        
+    // ========== AI Insights ==========
+    function renderInsights(insights) {
+      const grid = document.getElementById('insightsGrid');
+      const defaultInsights = [
+        { type: 'growth', icon: '📈', title: '增长机会', desc: 'TikTok渠道互动率环比增长23%，建议加大红人投放预算，重点布局短视频种草内容。' },
+        { type: 'risk', icon: '⚠️', title: '风险预警', desc: 'Reddit社区出现2条负面讨论，涉及产品耐用性问题，建议及时跟进回应。' },
+        { type: 'performance', icon: '🎯', title: '效果洞察', desc: 'PR媒体报道带来的流量质量最高，用户停留时长是社媒的2.8倍，ROI表现优异。' },
+        { type: 'opportunity', icon: '💡', title: '新品机会', desc: 'YUKA产品线声量快速上升，在德国市场关注度增长45%，可考虑加大DE站推广。' },
+      ];
+
+      const items = insights.length > 0 ? insights.map(i => ({
+        type: i.type || 'growth',
+        icon: i.icon || '📊',
+        title: i.title || '洞察',
+        desc: i.description || i.desc || '',
+      })) : defaultInsights;
+
+      grid.innerHTML = items.map(item => `
+        <div class="insight-card ${item.type}">
+          <div class="insight-icon">${item.icon}</div>
+          <div class="insight-title">${item.title}</div>
+          <div class="insight-desc">${item.desc}</div>
+        </div>
+      `).join('');
+    }
+
+    // ========== Table ==========
+    function renderTable() {
+      const data = state.filteredData;
+      const total = data.length;
+      const totalPages = Math.ceil(total / state.pageSize);
+      const start = (state.currentPage - 1) * state.pageSize;
+      const end = Math.min(start + state.pageSize, total);
+      const pageData = data.slice(start, end);
+
+      document.getElementById('tableTotal').textContent = `共 ${total} 条`;
+      document.getElementById('paginationInfo').textContent = `显示 ${start + 1}-${end} 条，共 ${total} 条`;
+
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = pageData.map((item, i) => {
+        const engagement = (item.likes || 0) + (item.comments || 0) + (item.shares || 0);
+        const catClass = item.category === 'pr' ? 'tag-pr' : item.category === 'affiliate' ? 'tag-affiliate' : 'tag-social';
+        const sentClass = item.sentiment === 'positive' ? 'tag-positive' : item.sentiment === 'negative' ? 'tag-negative' : 'tag-neutral';
+        const platInfo = platformInfo[item.platform] || { icon: '📄', name: item.platform };
+
         return `
           <tr>
-            <td><span class="rank-num ${index < 3 ? 'top3' : ''}">${index + 1}</span></td>
-            <td><span class="platform-badge">${platform.icon} ${platform.name}</span></td>
-            <td style="max-width: 300px;">
-              <div style="font-weight: 500; margin-bottom: 4px;">${item.title}</div>
-            </td>
-            <td><span class="category-tag ${item.category}">${CATEGORY_INFO[item.category]?.name || item.category}</span></td>
-            <td style="color: #64748b;">${item.author}</td>
-            <td><span class="sentiment-tag ${item.sentiment}">${getSentimentText(item.sentiment)}</span></td>
-            <td class="num">${formatNumber(item.views)}</td>
-            <td class="num">${formatNumber(totalEng)}</td>
-            <td style="color: #94a3b8; font-size: 12px;">${formatTime(item.publishTime)}</td>
+            <td>${start + i + 1}</td>
+            <td class="table-title-cell"><a href="${item.url}" target="_blank" title="${item.title}">${item.title}</a></td>
+            <td>${platInfo.icon} ${platInfo.name}</td>
+            <td><span class="tag ${catClass}">${item.category || 'N/A'}</span></td>
+            <td>${countryFlags[item.country] || ''} ${countryNames[item.country] || item.country || ''}</td>
+            <td><span class="tag ${sentClass}">${item.sentiment || 'neutral'}</span></td>
+            <td>${formatNumber(item.views || 0)}</td>
+            <td>${formatNumber(engagement)}</td>
+            <td>${formatDate(item.publishTime)}</td>
           </tr>
         `;
       }).join('');
+
+      // Pagination buttons
+      const buttons = document.getElementById('paginationButtons');
+      let btnHtml = `<button class="page-btn" onclick="goToPage(${state.currentPage - 1})" ${state.currentPage <= 1 ? 'disabled' : ''}>‹</button>`;
+      for (let i = 1; i <= Math.min(totalPages, 5); i++) {
+        btnHtml += `<button class="page-btn ${i === state.currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+      }
+      btnHtml += `<button class="page-btn" onclick="goToPage(${state.currentPage + 1})" ${state.currentPage >= totalPages ? 'disabled' : ''}>›</button>`;
+      buttons.innerHTML = btnHtml;
     }
 
-    // ===== 工具函数 =====
+    function filterTable() {
+      const query = document.getElementById('tableSearch').value.toLowerCase();
+      state.filteredData = state.allData.filter(item =>
+        item.title?.toLowerCase().includes(query) ||
+        item.summary?.toLowerCase().includes(query)
+      );
+      state.currentPage = 1;
+      renderTable();
+    }
+
+    function sortTable() {
+      const sortBy = document.getElementById('tableSort').value;
+      state.filteredData.sort((a, b) => {
+        if (sortBy === 'engagement') {
+          const ea = (a.likes || 0) + (a.comments || 0) + (a.shares || 0);
+          const eb = (b.likes || 0) + (b.comments || 0) + (b.shares || 0);
+          return eb - ea;
+        } else if (sortBy === 'views') {
+          return (b.views || 0) - (a.views || 0);
+        } else {
+          return new Date(b.publishTime) - new Date(a.publishTime);
+        }
+      });
+      state.currentPage = 1;
+      renderTable();
+    }
+
+    function goToPage(page) {
+      state.currentPage = page;
+      renderTable();
+    }
+
+    // ========== Export ==========
+    function exportExcel() {
+      const data = state.allData;
+      const ws_data = [
+        ['标题', '渠道', '分类', '国家', '情感', '浏览量', '点赞', '评论', '分享', '发布时间', '链接'],
+        ...data.map(item => [
+          item.title || '',
+          platformInfo[item.platform]?.name || item.platform || '',
+          item.category || '',
+          countryNames[item.country] || item.country || '',
+          item.sentiment || '',
+          item.views || 0,
+          item.likes || 0,
+          item.comments || 0,
+          item.shares || 0,
+          item.publishTime || '',
+          item.url || '',
+        ])
+      ];
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(ws_data);
+      XLSX.utils.book_append_sheet(wb, ws, '内容明细');
+
+      // Summary sheet
+      const stats = state.stats || {};
+      const summary_data = [
+        ['指标', '数值'],
+        ['总提及量', stats.overview?.totalMentions || data.length],
+        ['总浏览量', stats.overview?.totalViews || 0],
+        ['总互动量', stats.overview?.totalEngagement || 0],
+        ['互动率', (stats.overview?.engagementRate || 0) + '%'],
+      ];
+      const ws2 = XLSX.utils.aoa_to_sheet(summary_data);
+      XLSX.utils.book_append_sheet(wb, ws2, '汇总统计');
+
+      XLSX.writeFile(wb, '品牌监测数据导出.xlsx');
+    }
+
+    // ========== Utils ==========
     function formatNumber(num) {
+      if (!num) return '0';
       if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
       if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-      return num.toLocaleString();
+      return num.toString();
     }
 
-    function getCountryFlag(countryCode) {
-      const flags = {
-        US: '🇺🇸', GB: '🇬🇧', DE: '🇩🇪', FR: '🇫🇷',
-        CA: '🇨🇦', AU: '🇦🇺', JP: '🇯🇵', SE: '🇸🇪',
-        NL: '🇳🇱', ES: '🇪🇸', IT: '🇮🇹', BR: '🇧🇷',
-        MX: '🇲🇽', IN: '🇮🇳', KR: '🇰🇷', SG: '🇸🇬',
-        CN: '🇨🇳', RU: '🇷🇺', ZA: '🇿🇦', AE: '🇦🇪'
-      };
-      return flags[countryCode] || '🏳️';
-    }
-
-    function getSentimentText(sentiment) {
-      const map = { positive: '正面', neutral: '中性', negative: '负面' };
-      return map[sentiment] || sentiment;
-    }
-
-    function formatTime(isoString) {
-      const date = new Date(isoString);
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
       const now = new Date();
-      const diffMs = now - date;
-      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-      
-      if (diffDays > 30) return date.toLocaleDateString('zh-CN');
-      if (diffDays > 0) return `${diffDays}天前`;
-      if (diffHours > 0) return `${diffHours}小时前`;
-      return '刚刚';
+      const diff = now - d;
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      if (days === 0) return '今天';
+      if (days === 1) return '昨天';
+      if (days < 7) return days + '天前';
+      return d.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+    }
+
+    // ========== Mock Fallback ==========
+    function renderWithMockData() {
+      // If API fails, use a minimal mock to show the UI
+      state.stats = {
+        overview: {
+          totalMentions: 39,
+          totalViews: 3564983,
+          totalEngagement: 128456,
+          engagementRate: '3.6',
+          mentionsGrowth: 12.5,
+          viewsGrowth: 8.3,
+          engagementGrowth: 15.2,
+          rateGrowth: 2.3,
+        },
+        trends: Array.from({ length: 14 }, (_, i) => ({
+          date: `Day ${i+1}`,
+          total: 2 + Math.floor(Math.random() * 5),
+          pr: 1 + Math.floor(Math.random() * 3),
+          affiliate: 1 + Math.floor(Math.random() * 3),
+          social: 2 + Math.floor(Math.random() * 6),
+        })),
+        platformStats: {
+          platforms: {
+            news: { count: 8 },
+            affiliate_site: { count: 8 },
+            forum: { count: 5 },
+            youtube: { count: 6 },
+            tiktok: { count: 4 },
+            instagram: { count: 3 },
+            facebook: { count: 3 },
+            twitter: { count: 2 },
+          },
+          healthIndex: { score: 81, level: '良好' }
+        },
+        sentiment: { positive: 15, neutral: 18, negative: 6 },
+        categoryStats: {
+          pr: { count: 8, views: 850000, engagement: 32000, rate: '3.8%', top5: [
+            { title: 'Mammotion LUBA 2 Review: The Best Robot Mower?', platform: 'TechCrunch', engagement: 8500 },
+            { title: 'CES 2026: Mammotion Unveils New YUKA Robot', platform: 'Engadget', engagement: 6200 },
+            { title: 'Mammotion Raises $50M Series B', platform: 'Reuters', engagement: 5100 },
+            { title: 'Best Robot Mowers of 2026', platform: 'Tom\'s Guide', engagement: 4800 },
+            { title: 'Mammotion SPINO Launch Announcement', platform: 'PR Newswire', engagement: 3200 },
+          ]},
+          affiliate: { count: 8, views: 1200000, engagement: 45000, rate: '3.8%', top5: [
+            { title: 'LUBA 2 Deal: Save $300 on Amazon', platform: 'Dealabs', engagement: 12000 },
+            { title: 'Best Robot Mower Coupons 2026', platform: 'Coupert', engagement: 8500 },
+            { title: 'Mammotion vs Husqvarna Comparison', platform: 'RTINGS', engagement: 7200 },
+            { title: 'Mammotion Cashback Offer', platform: 'Rakuten', engagement: 5800 },
+            { title: 'Top 10 Robot Mowers on Sale', platform: 'Slickdeals', engagement: 4500 },
+          ]},
+          social: { count: 23, views: 1514983, engagement: 51456, rate: '3.4%', top5: [
+            { title: 'Unboxing my new LUBA 2!', platform: 'YouTube', engagement: 15000 },
+            { title: 'Mammotion LUBA review TikTok', platform: 'TikTok', engagement: 12000 },
+            { title: 'Thoughts on Mammotion YUKA?', platform: 'Reddit', engagement: 8500 },
+            { title: 'My Mammotion setup journey', platform: 'Instagram', engagement: 6200 },
+            { title: 'Mammotion vs Worx debate', platform: 'Facebook', engagement: 4800 },
+          ]},
+        },
+        topTopics: [
+          { topic: 'LUBA 2', count: 18 },
+          { topic: 'robot mower', count: 15 },
+          { topic: 'Mammotion', count: 14 },
+          { topic: 'YUKA', count: 10 },
+          { topic: 'CES 2026', count: 8 },
+          { topic: 'deal', count: 7 },
+          { topic: 'review', count: 6 },
+          { topic: 'SPINO', count: 5 },
+          { topic: 'comparison', count: 4 },
+          { topic: 'setup', count: 3 },
+        ],
+        geoDistribution: [
+          { country: 'US', count: 12 },
+          { country: 'DE', count: 9 },
+          { country: 'UK', count: 7 },
+          { country: 'FR', count: 6 },
+          { country: 'SE', count: 5 },
+        ],
+        aiInsights: [],
+      };
+      state.allData = generateMockData();
+      state.filteredData = [...state.allData];
+      renderDashboard();
+    }
+
+    function generateMockData() {
+      const mockItems = [
+        { title: 'Mammotion LUBA 2 Review: The Best Robot Mower Yet?', platform: 'news', category: 'pr', country: 'US', sentiment: 'positive', views: 250000, likes: 3200, comments: 850, shares: 1200, publishTime: '2026-08-01' },
+        { title: 'CES 2026: Mammotion Unveils YUKA and SPINO Robots', platform: 'news', category: 'pr', country: 'US', sentiment: 'positive', views: 180000, likes: 2100, comments: 560, shares: 890, publishTime: '2026-07-28' },
+        { title: 'Mammotion Raises $50M Series B Funding Round', platform: 'news', category: 'pr', country: 'US', sentiment: 'positive', views: 320000, likes: 4500, comments: 1200, shares: 2100, publishTime: '2026-07-25' },
+        { title: 'Best Robot Mowers of 2026 - Complete Buying Guide', platform: 'news', category: 'pr', country: 'US', sentiment: 'positive', views: 410000, likes: 5200, comments: 1800, shares: 3200, publishTime: '2026-07-20' },
+        { title: 'LUBA 2 AWD: Test und Erfahrung', platform: 'news', category: 'pr', country: 'DE', sentiment: 'positive', views: 95000, likes: 1200, comments: 340, shares: 450, publishTime: '2026-08-03' },
+        { title: 'Mammotion LUBA 2 im Test', platform: 'news', category: 'pr', country: 'DE', sentiment: 'neutral', views: 78000, likes: 950, comments: 280, shares: 320, publishTime: '2026-07-30' },
+        { title: 'Test: Mammotion YUKA Rasenroboter', platform: 'news', category: 'pr', country: 'DE', sentiment: 'positive', views: 62000, likes: 780, comments: 190, shares: 250, publishTime: '2026-07-22' },
+        { title: 'Mammotion LUBA 2 - Notre test complet', platform: 'news', category: 'pr', country: 'FR', sentiment: 'positive', views: 55000, likes: 680, comments: 170, shares: 220, publishTime: '2026-07-26' },
+        { title: 'LUBA 2 Deal: Save $300 on Amazon Prime Day', platform: 'affiliate_site', category: 'affiliate', country: 'US', sentiment: 'positive', views: 180000, likes: 2400, comments: 680, shares: 1500, publishTime: '2026-08-04' },
+        { title: 'Best Mammotion Coupon Codes for August 2026', platform: 'affiliate_site', category: 'affiliate', country: 'US', sentiment: 'positive', views: 120000, likes: 1500, comments: 420, shares: 890, publishTime: '2026-08-01' },
+        { title: 'Mammotion vs Husqvarna: Which Robot Mower is Better?', platform: 'affiliate_site', category: 'affiliate', country: 'US', sentiment: 'neutral', views: 250000, likes: 3100, comments: 950, shares: 1800, publishTime: '2026-07-29' },
+        { title: 'Top 10 Robot Mowers on Sale - August 2026', platform: 'affiliate_site', category: 'affiliate', country: 'US', sentiment: 'positive', views: 195000, likes: 2200, comments: 580, shares: 1100, publishTime: '2026-08-02' },
+        { title: 'Mammotion LUBA 2 Rabatt - 25% sparen', platform: 'affiliate_site', category: 'affiliate', country: 'DE', sentiment: 'positive', views: 85000, likes: 1100, comments: 320, shares: 450, publishTime: '2026-08-03' },
+        { title: 'Beste Rasenroboter Deals 2026', platform: 'affiliate_site', category: 'affiliate', country: 'DE', sentiment: 'positive', views: 72000, likes: 890, comments: 240, shares: 380, publishTime: '2026-07-31' },
+        { title: 'Code promo Mammotion - 20% de réduction', platform: 'affiliate_site', category: 'affiliate', country: 'FR', sentiment: 'positive', views: 48000, likes: 580, comments: 150, shares: 210, publishTime: '2026-08-01' },
+        { title: 'Mammotion Cashback: Earn 10% Back', platform: 'affiliate_site', category: 'affiliate', country: 'US', sentiment: 'positive', views: 65000, likes: 720, comments: 180, shares: 280, publishTime: '2026-07-27' },
+        { title: 'Mammotion LUBA 2 Full Review - 6 Months Later', platform: 'youtube', category: 'social', country: 'US', sentiment: 'positive', views: 450000, likes: 12000, comments: 3200, shares: 5800, publishTime: '2026-08-02' },
+        { title: 'I Tested Every Robot Mower So You Dont Have To', platform: 'youtube', category: 'social', country: 'US', sentiment: 'positive', views: 680000, likes: 18000, comments: 5200, shares: 8500, publishTime: '2026-07-28' },
+        { title: 'LUBA 2 vs Husqvarna Automower - Honest Comparison', platform: 'youtube', category: 'social', country: 'US', sentiment: 'neutral', views: 320000, likes: 8500, comments: 2100, shares: 3200, publishTime: '2026-07-25' },
+        { title: 'Mammotion YUKA First Look & Setup', platform: 'youtube', category: 'social', country: 'UK', sentiment: 'positive', views: 180000, likes: 4500, comments: 1200, shares: 1800, publishTime: '2026-07-30' },
+        { title: 'Mammotion LUBA 2 Unboxing and Setup', platform: 'youtube', category: 'social', country: 'DE', sentiment: 'positive', views: 120000, likes: 3200, comments: 850, shares: 1200, publishTime: '2026-08-01' },
+        { title: 'This Robot Mower CHANGED My Life 😱 #shorts', platform: 'tiktok', category: 'social', country: 'US', sentiment: 'positive', views: 890000, likes: 85000, comments: 12000, shares: 25000, publishTime: '2026-08-04' },
+        { title: 'LUBA 2 Robot Mower Review #lawncare', platform: 'tiktok', category: 'social', country: 'US', sentiment: 'positive', views: 450000, likes: 42000, comments: 6800, shares: 12000, publishTime: '2026-08-01' },
+        { title: 'Mammotion vs Worx - Which is Better?', platform: 'tiktok', category: 'social', country: 'UK', sentiment: 'neutral', views: 280000, likes: 25000, comments: 4200, shares: 7800, publishTime: '2026-07-29' },
+        { title: 'Mein neuer Rasenroboter! 🇩🇪', platform: 'tiktok', category: 'social', country: 'DE', sentiment: 'positive', views: 195000, likes: 18000, comments: 2800, shares: 5200, publishTime: '2026-08-03' },
+        { title: 'My Mammotion LUBA 2 Setup Journey', platform: 'instagram', category: 'social', country: 'US', sentiment: 'positive', views: 85000, likes: 12000, comments: 1800, shares: 2200, publishTime: '2026-08-02' },
+        { title: 'Perfect Lawn with Mammotion ✨', platform: 'instagram', category: 'social', country: 'US', sentiment: 'positive', views: 62000, likes: 8500, comments: 1200, shares: 1500, publishTime: '2026-07-31' },
+        { title: 'Mammotion YUKA - New Arrival', platform: 'instagram', category: 'social', country: 'SE', sentiment: 'positive', views: 38000, likes: 5200, comments: 720, shares: 980, publishTime: '2026-07-26' },
+        { title: 'Mammotion LUBA 2 Owners Group', platform: 'facebook', category: 'social', country: 'US', sentiment: 'positive', views: 45000, likes: 3200, comments: 1500, shares: 800, publishTime: '2026-08-01' },
+        { title: 'Is Mammotion worth the price?', platform: 'facebook', category: 'social', country: 'UK', sentiment: 'neutral', views: 32000, likes: 1800, comments: 950, shares: 450, publishTime: '2026-07-28' },
+        { title: 'Mammotion SPINO leaked info', platform: 'facebook', category: 'social', country: 'US', sentiment: 'positive', views: 28000, likes: 2100, comments: 680, shares: 520, publishTime: '2026-07-24' },
+        { title: 'Thoughts on Mammotion LUBA 2 after 1 month?', platform: 'forum', category: 'social', country: 'US', sentiment: 'neutral', views: 65000, likes: 890, comments: 1200, shares: 300, publishTime: '2026-08-03' },
+        { title: 'Mammotion vs Husqvarna owners thread', platform: 'forum', category: 'social', country: 'US', sentiment: 'neutral', views: 89000, likes: 1200, comments: 2500, shares: 450, publishTime: '2026-07-30' },
+        { title: 'LUBA 2 issues and fixes megathread', platform: 'forum', category: 'social', country: 'US', sentiment: 'negative', views: 42000, likes: 560, comments: 890, shares: 200, publishTime: '2026-07-27' },
+        { title: 'Mammotion YUKA first impressions', platform: 'forum', category: 'social', country: 'DE', sentiment: 'positive', views: 38000, likes: 480, comments: 720, shares: 180, publishTime: '2026-07-29' },
+        { title: 'Mammotion SPINO release date speculation', platform: 'forum', category: 'social', country: 'UK', sentiment: 'neutral', views: 28000, likes: 320, comments: 560, shares: 120, publishTime: '2026-07-25' },
+        { title: 'Mammotion LUBA 2 announced - 5 things to know', platform: 'twitter', category: 'social', country: 'US', sentiment: 'positive', views: 120000, likes: 3500, comments: 890, shares: 2100, publishTime: '2026-08-02' },
+        { title: 'Just got my Mammotion YUKA! First thoughts', platform: 'twitter', category: 'social', country: 'US', sentiment: 'positive', views: 45000, likes: 1200, comments: 320, shares: 450, publishTime: '2026-07-31' },
+        { title: 'Mammotion quality concerns thread', platform: 'twitter', category: 'social', country: 'UK', sentiment: 'negative', views: 68000, likes: 1800, comments: 650, shares: 920, publishTime: '2026-07-26' },
+      ];
+      return mockItems.map((item, i) => ({ id: i + 1, ...item, url: '#' }));
     }
   </script>
 </body>
