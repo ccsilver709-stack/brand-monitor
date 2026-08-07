@@ -1108,10 +1108,48 @@
       box-shadow: var(--shadow-lg);
       padding: 8px;
       min-width: 200px;
-      z-index: 100;
+      z-index: 1000;
       display: none;
     }
     .dropdown-menu.show { display: block; }
+
+    /* Custom date range */
+    .custom-date-wrapper {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #fff;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      margin-top: 8px;
+    }
+    .custom-date-wrapper.show { display: flex; }
+    .custom-date-wrapper input[type="date"] {
+      padding: 4px 8px;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      color: var(--text-primary);
+      outline: none;
+    }
+    .custom-date-wrapper input[type="date"]:focus {
+      border-color: var(--blue);
+    }
+    .custom-date-wrapper span {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .custom-date-wrapper button {
+      padding: 4px 10px;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .custom-date-wrapper button:hover { background: var(--blue-dark); }
     .dropdown-item {
       padding: 8px 12px;
       border-radius: var(--radius-sm);
@@ -1337,10 +1375,19 @@
           </div>
         </div>
 
-        <div class="time-range-group">
-          <button class="time-btn" onclick="setTimeRange(7)">7天</button>
-          <button class="time-btn active" onclick="setTimeRange(30)">30天</button>
-          <button class="time-btn" onclick="setTimeRange(90)">90天</button>
+        <div style="display: flex; flex-direction: column; gap: 0;">
+          <div class="time-range-group">
+            <button class="time-btn" onclick="setTimeRange(7)">7天</button>
+            <button class="time-btn active" onclick="setTimeRange(30)">30天</button>
+            <button class="time-btn" onclick="setTimeRange(90)">90天</button>
+            <button class="time-btn" onclick="setTimeRange('custom')" id="customBtn">自定义</button>
+          </div>
+          <div class="custom-date-wrapper" id="customDateWrapper">
+            <input type="date" id="startDate">
+            <span>至</span>
+            <input type="date" id="endDate">
+            <button onclick="applyCustomDate()">确定</button>
+          </div>
         </div>
 
         <div class="action-buttons">
@@ -1523,6 +1570,8 @@
       currentGroup: 'overview',
       currentSub: 'all',
       timeRange: 30,
+      startDate: null,
+      endDate: null,
       keywords: ['Mammotion', 'LUBA', 'YUKA'],
       platforms: ['news', 'affiliate_site', 'forum', 'youtube', 'tiktok', 'instagram', 'facebook', 'twitter'],
       countries: ['US', 'DE', 'UK', 'FR', 'SE'],
@@ -1775,9 +1824,51 @@
     // ========== Time range ==========
     function setTimeRange(days) {
       state.timeRange = days;
-      document.querySelectorAll('.time-btn').forEach((btn, i) => {
-        btn.classList.toggle('active', [7, 30, 90][i] === days);
-      });
+      const wrapper = document.getElementById('customDateWrapper');
+      
+      if (days === 'custom') {
+        // Show custom date picker
+        wrapper.classList.add('show');
+        document.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById('customBtn').classList.add('active');
+        
+        // Set default dates if not set
+        if (!state.startDate || !state.endDate) {
+          const end = new Date();
+          const start = new Date();
+          start.setDate(start.getDate() - 30);
+          document.getElementById('startDate').value = start.toISOString().split('T')[0];
+          document.getElementById('endDate').value = end.toISOString().split('T')[0];
+        }
+      } else {
+        // Hide custom date picker
+        wrapper.classList.remove('show');
+        state.startDate = null;
+        state.endDate = null;
+        document.querySelectorAll('.time-btn').forEach((btn, i) => {
+          btn.classList.toggle('active', [7, 30, 90][i] === days);
+        });
+        fetchData();
+      }
+    }
+
+    function applyCustomDate() {
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+      
+      if (!startDate || !endDate) {
+        alert('请选择开始和结束日期');
+        return;
+      }
+      
+      if (new Date(startDate) > new Date(endDate)) {
+        alert('开始日期不能晚于结束日期');
+        return;
+      }
+      
+      state.startDate = startDate;
+      state.endDate = endDate;
+      state.timeRange = 'custom';
       fetchData();
     }
 
@@ -1808,6 +1899,9 @@
           page: 1,
           pageSize: 100,
         });
+        
+        if (state.startDate) params.append('startDate', state.startDate);
+        if (state.endDate) params.append('endDate', state.endDate);
 
         const res = await fetch(`/api/search?${params}`);
         const data = await res.json();
