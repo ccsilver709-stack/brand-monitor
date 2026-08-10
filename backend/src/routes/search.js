@@ -23,10 +23,10 @@ function getMockData() {
  * 将时间范围天数转换为各API的时间参数
  */
 function getTimeParams(days) {
-  if (!days) return { googleNews: null, youtube: null, reddit: 'month', gcs: null };
-  
+  if (!days) return { googleNews: null, youtubePublishedAfter: null, reddit: 'month', gcs: null };
+
   const d = parseInt(days);
-  if (isNaN(d)) return { googleNews: null, youtube: null, reddit: 'month', gcs: null };
+  if (isNaN(d)) return { googleNews: null, youtubePublishedAfter: null, reddit: 'month', gcs: null };
 
   // Google News RSS: h(小时) d(天) w(周) m(月) y(年)
   let googleNews = 'm';
@@ -80,11 +80,6 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
   const pList = platforms ? platforms.split(',').map(p => p.trim()).filter(Boolean) : [];
   const cList = countries ? countries.split(',').map(c => c.trim()).filter(Boolean) : ['US'];
 
-  console.log('[Debug] === fetchRealData start ===');
-  console.log('[Debug] pList:', JSON.stringify(pList));
-  console.log('[Debug] kwList:', JSON.stringify(kwList));
-  console.log('[Debug] initial allResults length:', allResults.length);
-
   const country = cList[0] || 'US';
   const timeParams = getTimeParams(timeRange);
 
@@ -92,16 +87,12 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
   // 不需要 API Key，永远可用
   if (pList.length === 0 || pList.includes('news')) {
     try {
-      console.log('[Debug] --- Google News RSS start ---');
       const results = await googleNewsRSS.batchSearch(kwList, {
         country,
         language: 'en',
         timeRange: timeParams.googleNews,
       });
-      console.log(`[Debug] Google News returned ${results.length} results`);
-      console.log('[Debug] allResults before push:', allResults.length);
       allResults.push(...results);
-      console.log('[Debug] allResults after push:', allResults.length);
     } catch (e) {
       console.error('[Google News RSS] Failed:', e.message);
     }
@@ -110,7 +101,6 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
   // ===== 2. YouTube Data API v3（视频）=====
   if (youtube.isAvailable() && (pList.length === 0 || pList.includes('youtube'))) {
     try {
-      console.log('[Debug] --- YouTube API start ---');
       const results = await youtube.batchSearch(kwList, {
         country,
         language: 'en',
@@ -118,10 +108,7 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
         order: 'relevance',
         publishedAfter: timeParams.youtubePublishedAfter,
       });
-      console.log(`[Debug] YouTube returned ${results.length} results`);
-      console.log('[Debug] allResults before push:', allResults.length);
       allResults.push(...results);
-      console.log('[Debug] allResults after push:', allResults.length);
     } catch (e) {
       console.error('[YouTube API] Failed:', e.message);
     }
@@ -130,18 +117,12 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
   // ===== 3. Reddit API（社区/社媒）=====
   if (reddit.isAvailable() && (pList.length === 0 || pList.includes('reddit') || pList.includes('forum'))) {
     try {
-      console.log('[Debug] --- Reddit API start ---');
-      console.log('[Debug] allResults before Reddit call:', allResults.length);
       const results = await reddit.batchSearch(kwList, {
         sort: 'relevance',
         time: timeParams.reddit,
         limit: 25,
       });
-      console.log(`[Debug] Reddit returned ${results.length} results`);
-      console.log('[Debug] results is array:', Array.isArray(results));
-      console.log('[Debug] allResults before push:', allResults.length);
       allResults.push(...results);
-      console.log('[Debug] allResults after push:', allResults.length);
     } catch (e) {
       console.error('[Reddit API] Failed:', e.message);
     }
@@ -203,14 +184,6 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
   }
 
   // 自动分类
-  // 调试日志：打印各平台数据量
-  console.log('[Debug] fetchRealData total results:', allResults.length);
-  const platformCounts = {};
-  allResults.forEach(r => {
-    platformCounts[r.platform] = (platformCounts[r.platform] || 0) + 1;
-  });
-  console.log('[Debug] Platform counts:', JSON.stringify(platformCounts));
-
   const classified = classifyBatch(allResults);
 
   return classified;
@@ -357,7 +330,9 @@ router.get('/', async (req, res) => {
 
     if (startTime) {
       results = results.filter(r => {
+        if (!r.publishTime) return true; // 无发布时间的数据保留（如 Google Custom Search 结果）
         const publishTime = new Date(r.publishTime);
+        if (isNaN(publishTime.getTime())) return true; // 无效日期保留
         return publishTime >= startTime && publishTime <= endTime;
       });
     }
