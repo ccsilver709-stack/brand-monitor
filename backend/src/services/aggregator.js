@@ -41,6 +41,7 @@ const PLATFORM_MAP = {
 const CATEGORY_MAP = {
   pr: { name: 'PR公关', color: '#8b5cf6', icon: '📰' },
   affiliate: { name: '联盟营销', color: '#06b6d4', icon: '🛒' },
+  influencer: { name: '红人内容', color: '#ec4899', icon: '🎬' },
   social: { name: '社媒内容', color: '#3b82f6', icon: '💬' }
 };
 
@@ -92,9 +93,9 @@ function calcOverview(results) {
   };
 }
 
-// ========== 分类统计（PR/联盟/社媒）==========
+// ========== 分类统计（PR/联盟/红人/社媒）==========
 function calcCategoryStats(results) {
-  const categories = { pr: [], affiliate: [], social: [] };
+  const categories = { pr: [], affiliate: [], influencer: [], social: [] };
   
   results.forEach(r => {
     const cat = r.category || 'social';
@@ -176,7 +177,7 @@ function calcTrends(results, days = 7) {
     const date = new Date(now);
     date.setDate(date.getDate() - i);
     const dateStr = date.toISOString().split('T')[0];
-    trends[dateStr] = { total: 0, pr: 0, affiliate: 0, social: 0 };
+    trends[dateStr] = { total: 0, pr: 0, affiliate: 0, influencer: 0, social: 0 };
   }
 
   // 统计每天的数据

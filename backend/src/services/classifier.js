@@ -3,10 +3,11 @@
  * 输入：内容数据（标题、摘要、URL、平台等）
  * 输出：分类结果 { category, subCategory, confidence, reasons }
  * 
- * 三大分类：
+ * 四大分类：
  * - pr: PR公关 / 新闻媒体
  * - affiliate: 联盟营销 / 导购
- * - social: 社媒内容 / 用户UGC
+ * - influencer: 红人内容 / 视频图片创作者（YouTube/TikTok/Instagram）
+ * - social: 社交舆情 / 用户讨论（Facebook/Twitter/Reddit/论坛）
  */
 
 // ========== 规则库 ==========
@@ -61,13 +62,18 @@ const PR_KEYWORDS = [
   'communiqué de presse', 'annonce', 'lance'  // 法语
 ];
 
-// 社交平台域名
-const SOCIAL_DOMAINS = [
+// 红人平台域名（视频/图片创作者平台）
+const INFLUENCER_DOMAINS = [
   'youtube.com', 'youtu.be', 'tiktok.com', 'instagram.com',
+  'tiktokv.com', 'ig.me'
+];
+
+// 社交舆情平台域名（用户讨论/社区）
+const SOCIAL_DOMAINS = [
   'facebook.com', 'fb.com', 'twitter.com', 'x.com',
   'reddit.com', 'redd.it', 'quora.com', 'pinterest.com',
   'discord.com', 'telegram.org', 't.me',
-  'tiktokv.com', 'ig.me', 'fb.watch'
+  'fb.watch'
 ];
 
 // 社区论坛关键词
@@ -100,6 +106,7 @@ function classify(item) {
   const scores = {
     pr: 0,
     affiliate: 0,
+    influencer: 0,
     social: 0
   };
 
@@ -118,9 +125,14 @@ function classify(item) {
     reasons.push('新闻媒体域名');
   }
 
+  if (INFLUENCER_DOMAINS.some(d => domain.includes(d) || url.includes(d))) {
+    scores.influencer += 50;
+    reasons.push('红人内容平台域名');
+  }
+
   if (SOCIAL_DOMAINS.some(d => domain.includes(d) || url.includes(d))) {
     scores.social += 40;
-    reasons.push('社交平台域名');
+    reasons.push('社交/社区平台域名');
   }
 
   // ===== 2. 平台匹配 =====
@@ -132,7 +144,11 @@ function classify(item) {
     scores.affiliate += 30;
     reasons.push('联盟导购渠道');
   }
-  if (['youtube', 'tiktok', 'instagram', 'facebook', 'twitter', 'forum'].includes(platform)) {
+  if (['youtube', 'tiktok', 'instagram'].includes(platform)) {
+    scores.influencer += 40;
+    reasons.push('红人内容渠道');
+  }
+  if (['facebook', 'twitter', 'forum', 'reddit'].includes(platform)) {
     scores.social += 30;
     reasons.push('社交/社区渠道');
   }
@@ -189,11 +205,13 @@ function classify(item) {
   }
 
   // ===== 5. 确定最终分类 =====
-  const maxScore = Math.max(scores.pr, scores.affiliate, scores.social);
-  const totalScore = scores.pr + scores.affiliate + scores.social;
+  const maxScore = Math.max(scores.pr, scores.affiliate, scores.influencer, scores.social);
+  const totalScore = scores.pr + scores.affiliate + scores.influencer + scores.social;
   
   let category = 'social'; // 默认社媒
-  if (scores.affiliate === maxScore && maxScore >= 20) {
+  if (scores.influencer === maxScore && maxScore >= 20) {
+    category = 'influencer';
+  } else if (scores.affiliate === maxScore && maxScore >= 20) {
     category = 'affiliate';
   } else if (scores.pr === maxScore && maxScore >= 20) {
     category = 'pr';
