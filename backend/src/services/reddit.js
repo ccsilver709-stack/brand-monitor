@@ -1,18 +1,29 @@
 /**
  * Reddit API 服务模块
- * 完全免费，需要注册应用获取 client_id 和 client_secret
- * 文档：https://www.reddit.com/dev/api/
+ * 使用 Reddit 公开 RSS Feed，无需认证、无需 API Key
+ * 
+ * 说明：
+ * - Reddit JSON API 对服务器端 IP 限制较严，容易 403
+ * - RSS Feed 接口限制较宽松，可以正常访问
+ * - 无需注册、无需创建应用、无需 Key
+ * - 限制：每分钟约 60 次请求（IP 级别限流）
  */
 
 const https = require('https');
+const { XMLParser } = require('fast-xml-parser');
 
 // 内存缓存
 const cache = new Map();
 const CACHE_TTL = 1000 * 60 * 30; // 30分钟缓存
 
-// access_token 缓存
-let accessToken = null;
-let tokenExpiry = 0;
+// User-Agent
+const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+// XML 解析器
+const xmlParser = new XMLParser({
+  ignoreAttributes: false,
+  attributeNamePrefix: '@_',
+});
 
 /**
  * 生成缓存键
@@ -44,81 +55,19 @@ function setCache(key, data) {
 }
 
 /**
- * 获取 access_token（使用应用凭证）
+ * 请求 Reddit RSS Feed
  */
-async function getAccessToken() {
-  // 如果 token 还没过期，直接返回
-  if (accessToken && Date.now() < tokenExpiry) {
-    return accessToken;
-  }
-
-  const clientId = process.env.REDDIT_CLIENT_ID;
-  const clientSecret = process.env.REDDIT_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
-    throw new Error('REDDIT_CLIENT_ID or REDDIT_CLIENT_SECRET not configured');
-  }
-
-  return new Promise((resolve, reject) => {
-    const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
-
-    const postData = 'grant_type=client_credentials';
-
-    const options = {
-      hostname: 'www.reddit.com',
-      path: '/api/v1/access_token',
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': 'BrandMonitor/1.0 (by /u/your_username)',
-      },
-    };
-
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', (chunk) => { data += chunk; });
-      res.on('end', () => {
-        try {
-          const json = JSON.parse(data);
-          if (json.access_token) {
-            accessToken = json.access_token;
-            tokenExpiry = Date.now() + (json.expires_in - 60) * 1000; // 提前60秒过期
-            resolve(accessToken);
-          } else {
-            reject(new Error(`Reddit auth failed: ${json.error || 'unknown error'}`));
-          }
-        } catch (e) {
-          reject(new Error(`Failed to parse Reddit auth response: ${e.message}`));
-        }
-      });
-    });
-
-    req.on('error', (e) => {
-      reject(new Error(`Reddit auth request failed: ${e.message}`));
-    });
-
-    req.write(postData);
-    req.end();
-  });
-}
-
-/**
- * 调用 Reddit API
- */
-async function callRedditAPI(endpoint, params = {}) {
-  const token = await getAccessToken();
-
+async function fetchRedditRSS(endpoint, params = {}) {
   return new Promise((resolve, reject) => {
     const queryParams = new URLSearchParams(params);
 
     const options = {
-      hostname: 'oauth.reddit.com',
-      path: `/${endpoint}?${queryParams.toString()}`,
+      hostname: 'www.reddit.com',
+      path: `/${endpoint}.rss?${queryParams.toString()}`,
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'User-Agent': 'BrandMonitor/1.0 (by /u/your_username)',
+        'User-Agent': USER_AGENT,
+        'Accept': 'application/rss+xml, application/atom+xml, text/xml',
       },
     };
 
@@ -126,21 +75,21 @@ async function callRedditAPI(endpoint, params = {}) {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
-        try {
-          const json = JSON.parse(data);
-          if (json.error) {
-            reject(new Error(`Reddit API error: ${json.error}`));
-          } else {
-            resolve(json);
-          }
-        } catch (e) {
-          reject(new Error(`Failed to parse Reddit response: ${e.message}`));
+        if (res.statusCode === 200) {
+          resolve(data);
+        } else {
+          reject(new Error(`Reddit RSS request failed: ${res.statusCode}`));
         }
       });
     });
 
     req.on('error', (e) => {
-      reject(new Error(`Reddit API request failed: ${e.message}`));
+      reject(new Error(`Reddit RSS request failed: ${e.message}`));
+    });
+
+    req.setTimeout(10000, () => {
+      req.destroy();
+      reject(new Error('Reddit RSS request timeout'));
     });
 
     req.end();
@@ -148,42 +97,120 @@ async function callRedditAPI(endpoint, params = {}) {
 }
 
 /**
- * 格式化 Reddit 帖子为统一格式
+ * 解析 RSS 内容，提取帖子信息
  */
-function formatRedditPosts(posts) {
-  if (!posts || !Array.isArray(posts)) return [];
+function parseRSS(xmlContent) {
+  try {
+    const json = xmlParser.parse(xmlContent);
+    const feed = json.feed || json.rss?.channel;
+    
+    if (!feed) return [];
 
-  return posts.map((post, index) => {
-    const data = post.data || {};
+    // Atom 格式 (feed.entry)
+    let entries = feed.entry;
+    if (!entries && feed.item) {
+      // RSS 格式 (channel.item)
+      entries = feed.item;
+    }
 
-    return {
-      id: `reddit-${data.id}`,
-      platform: 'reddit',
-      title: data.title || '',
-      summary: data.selftext?.substring(0, 300) || '',
-      author: data.author || '',
-      url: `https://reddit.com${data.permalink || ''}`,
-      displayUrl: '',
-      publishTime: new Date(data.created_utc * 1000).toISOString(),
-      views: data.view_count || 0,
-      likes: data.ups || 0,
-      comments: data.num_comments || 0,
-      shares: 0,
-      country: 'US',
-      productLine: '',
-      sentiment: 'neutral',
-      relevance: 100 - index * 5,
-      thumbnail: data.thumbnail || '',
-      subreddit: data.subreddit || '',
-      score: data.score || 0,
-      raw: {
-        subreddit: data.subreddit,
-        score: data.score,
-        num_comments: data.num_comments,
-        permalink: data.permalink,
-      },
-    };
-  });
+    if (!entries) return [];
+    if (!Array.isArray(entries)) entries = [entries];
+
+    return entries.map((entry, index) => {
+      // 提取 ID
+      let id = '';
+      if (entry.id) {
+        const idMatch = entry.id.match(/\/([a-z0-9]+)\/?$/i);
+        if (idMatch) id = idMatch[1];
+      }
+      if (!id && entry.guid) {
+        id = entry.guid['#text'] || entry.guid;
+      }
+
+      // 提取标题
+      const title = entry.title?.['#text'] || entry.title || '';
+
+      // 提取链接
+      let url = '';
+      if (entry.link) {
+        if (Array.isArray(entry.link)) {
+          const altLink = entry.link.find(l => l['@_rel'] === 'alternate');
+          url = altLink?.['@_href'] || entry.link[0]?.['@_href'] || '';
+        } else if (entry.link['@_href']) {
+          url = entry.link['@_href'];
+        } else {
+          url = entry.link;
+        }
+      }
+
+      // 提取作者
+      let author = '';
+      if (entry.author) {
+        author = entry.author.name || entry.author || '';
+        if (author.startsWith('/u/')) author = author.substring(3);
+      }
+      if (!author && entry['dc:creator']) {
+        author = entry['dc:creator'];
+      }
+
+      // 提取发布时间
+      const publishTime = entry.updated || entry.published || entry.pubDate || new Date().toISOString();
+
+      // 提取内容/摘要
+      let summary = '';
+      if (entry.summary) {
+        summary = entry.summary['#text'] || entry.summary || '';
+      }
+      if (!summary && entry.description) {
+        summary = entry.description['#text'] || entry.description || '';
+      }
+      if (!summary && entry.content) {
+        summary = entry.content['#text'] || entry.content || '';
+      }
+      // 去掉 HTML 标签
+      summary = summary.replace(/<[^>]*>/g, '').substring(0, 300);
+
+      // 提取子版块
+      let subreddit = '';
+      if (entry.category) {
+        if (Array.isArray(entry.category)) {
+          const subCat = entry.category.find(c => c['@_label']?.startsWith('r/'));
+          if (subCat) subreddit = subCat['@_label'].substring(2);
+        } else if (entry.category['@_label']?.startsWith('r/')) {
+          subreddit = entry.category['@_label'].substring(2);
+        }
+      }
+
+      return {
+        id: `reddit-${id || index}`,
+        platform: 'reddit',
+        title,
+        summary,
+        author,
+        url,
+        displayUrl: '',
+        publishTime: new Date(publishTime).toISOString(),
+        views: 0,
+        likes: 0,
+        comments: 0,
+        shares: 0,
+        country: 'US',
+        productLine: '',
+        sentiment: 'neutral',
+        relevance: 100 - index * 5,
+        thumbnail: '',
+        subreddit,
+        score: 0,
+        raw: {
+          subreddit,
+          permalink: url,
+        },
+      };
+    });
+  } catch (e) {
+    console.error('Failed to parse Reddit RSS:', e.message);
+    return [];
+  }
 }
 
 /**
@@ -193,7 +220,7 @@ function formatRedditPosts(posts) {
  * @param {string} options.subreddit - 特定子版块
  * @param {string} options.sort - 排序方式 (relevance/hot/top/new/comments)
  * @param {string} options.time - 时间范围 (hour/day/week/month/year/all)
- * @param {number} options.limit - 结果数量 (max 100)
+ * @param {number} options.limit - 结果数量
  * @returns {Promise<Array>} 格式化后的结果
  */
 async function searchPosts(keywords, options = {}) {
@@ -214,11 +241,10 @@ async function searchPosts(keywords, options = {}) {
     : 'search';
 
   try {
-    const result = await callRedditAPI(endpoint, params);
-    const posts = result.data?.children || [];
-    const formatted = formatRedditPosts(posts);
-    setCache(cacheKey, formatted);
-    return formatted;
+    const xmlContent = await fetchRedditRSS(endpoint, params);
+    const posts = parseRSS(xmlContent);
+    setCache(cacheKey, posts);
+    return posts;
   } catch (e) {
     console.error('Reddit search failed:', e.message);
     throw e;
@@ -253,9 +279,10 @@ async function batchSearch(keywords, options = {}) {
 
 /**
  * 检查 Reddit API 是否可用
+ * RSS 接口永远可用，无需配置
  */
 function isAvailable() {
-  return !!process.env.REDDIT_CLIENT_ID && !!process.env.REDDIT_CLIENT_SECRET;
+  return true;
 }
 
 /**
