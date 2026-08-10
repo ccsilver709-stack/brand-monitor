@@ -190,6 +190,14 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
   }
 
   // 自动分类
+  // 调试日志：打印各平台数据量
+  console.log('[Debug] fetchRealData total results:', allResults.length);
+  const platformCounts = {};
+  allResults.forEach(r => {
+    platformCounts[r.platform] = (platformCounts[r.platform] || 0) + 1;
+  });
+  console.log('[Debug] Platform counts:', JSON.stringify(platformCounts));
+
   const classified = classifyBatch(allResults);
 
   return classified;
@@ -369,6 +377,19 @@ router.get('/', async (req, res) => {
         stats,
         dataSource: useRealData ? 'real' : 'mock',
         dataSources: dataSources,
+        debug: {
+          totalBeforeFilter: results.length,
+          platformCounts: results.reduce((acc, r) => {
+            acc[r.platform] = (acc[r.platform] || 0) + 1;
+            return acc;
+          }, {}),
+          filters: {
+            keywords,
+            platforms,
+            countries,
+            category,
+          }
+        },
         filters: {
           keywords: keywords ? keywords.split(',') : [],
           platforms: platforms ? platforms.split(',') : [],
