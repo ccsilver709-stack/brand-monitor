@@ -80,6 +80,11 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
   const pList = platforms ? platforms.split(',').map(p => p.trim()).filter(Boolean) : [];
   const cList = countries ? countries.split(',').map(c => c.trim()).filter(Boolean) : ['US'];
 
+  console.log('[Debug] === fetchRealData start ===');
+  console.log('[Debug] pList:', JSON.stringify(pList));
+  console.log('[Debug] kwList:', JSON.stringify(kwList));
+  console.log('[Debug] initial allResults length:', allResults.length);
+
   const country = cList[0] || 'US';
   const timeParams = getTimeParams(timeRange);
 
@@ -87,23 +92,25 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
   // 不需要 API Key，永远可用
   if (pList.length === 0 || pList.includes('news')) {
     try {
-      console.log('[Google News RSS] Searching...');
+      console.log('[Debug] --- Google News RSS start ---');
       const results = await googleNewsRSS.batchSearch(kwList, {
         country,
         language: 'en',
         timeRange: timeParams.googleNews,
       });
-      console.log(`[Google News RSS] Got ${results.length} results`);
+      console.log(`[Debug] Google News returned ${results.length} results`);
+      console.log('[Debug] allResults before push:', allResults.length);
       allResults.push(...results);
+      console.log('[Debug] allResults after push:', allResults.length);
     } catch (e) {
       console.error('[Google News RSS] Failed:', e.message);
     }
   }
 
-  // ===== 2. YouTube Data API（红人内容）=====
+  // ===== 2. YouTube Data API v3（视频）=====
   if (youtube.isAvailable() && (pList.length === 0 || pList.includes('youtube'))) {
     try {
-      console.log('[YouTube API] Searching...');
+      console.log('[Debug] --- YouTube API start ---');
       const results = await youtube.batchSearch(kwList, {
         country,
         language: 'en',
@@ -111,8 +118,10 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
         order: 'relevance',
         publishedAfter: timeParams.youtubePublishedAfter,
       });
-      console.log(`[YouTube API] Got ${results.length} results`);
+      console.log(`[Debug] YouTube returned ${results.length} results`);
+      console.log('[Debug] allResults before push:', allResults.length);
       allResults.push(...results);
+      console.log('[Debug] allResults after push:', allResults.length);
     } catch (e) {
       console.error('[YouTube API] Failed:', e.message);
     }
@@ -121,14 +130,18 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
   // ===== 3. Reddit API（社区/社媒）=====
   if (reddit.isAvailable() && (pList.length === 0 || pList.includes('reddit') || pList.includes('forum'))) {
     try {
-      console.log('[Reddit API] Searching...');
+      console.log('[Debug] --- Reddit API start ---');
+      console.log('[Debug] allResults before Reddit call:', allResults.length);
       const results = await reddit.batchSearch(kwList, {
         sort: 'relevance',
         time: timeParams.reddit,
         limit: 25,
       });
-      console.log(`[Reddit API] Got ${results.length} results`);
+      console.log(`[Debug] Reddit returned ${results.length} results`);
+      console.log('[Debug] results is array:', Array.isArray(results));
+      console.log('[Debug] allResults before push:', allResults.length);
       allResults.push(...results);
+      console.log('[Debug] allResults after push:', allResults.length);
     } catch (e) {
       console.error('[Reddit API] Failed:', e.message);
     }
