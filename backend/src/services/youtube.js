@@ -166,7 +166,43 @@ async function searchVideos(keywords, options = {}) {
 
   try {
     const result = await callYouTubeAPI('search', params);
-    const formatted = formatSearchResults(result.items || []);
+    const items = result.items || [];
+    const formatted = formatSearchResults(items);
+
+    // 批量获取视频统计数据（播放量、点赞数、评论数）
+    const videoIds = items
+      .map(item => item.id?.videoId)
+      .filter(id => id);
+    
+    if (videoIds.length > 0) {
+      try {
+        const statsResult = await callYouTubeAPI('videos', {
+          part: 'statistics',
+          id: videoIds.join(','),
+          maxResults: 50,
+        });
+
+        const statsMap = {};
+        (statsResult.items || []).forEach(item => {
+          statsMap[item.id] = item.statistics || {};
+        });
+
+        // 填充统计数据
+        formatted.forEach(item => {
+          const videoId = item.raw?.videoId;
+          if (videoId && statsMap[videoId]) {
+            const stats = statsMap[videoId];
+            item.views = parseInt(stats.viewCount) || 0;
+            item.likes = parseInt(stats.likeCount) || 0;
+            item.comments = parseInt(stats.commentCount) || 0;
+          }
+        });
+      } catch (statsErr) {
+        console.warn('YouTube video stats fetch failed:', statsErr.message);
+        // 统计数据获取失败不影响主流程，保持0值
+      }
+    }
+
     setCache(cacheKey, formatted);
     return formatted;
   } catch (e) {
