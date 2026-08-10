@@ -235,7 +235,7 @@ function classify(item) {
 
 function determineSubCategory(item, category, domain) {
   const platform = (item.platform || '').toLowerCase();
-  const text = (item.title + ' ' + item.summary).toLowerCase();
+  const text = ((item.title || '') + ' ' + (item.summary || '')).toLowerCase();
 
   if (category === 'pr') {
     if (text.includes('press release') || text.includes('announce')) return 'press_release';

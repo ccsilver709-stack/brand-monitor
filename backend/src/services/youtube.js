@@ -241,7 +241,17 @@ async function batchSearch(keywords, options = {}) {
  * 检查 YouTube API 是否可用
  */
 function isAvailable() {
-  return !!process.env.YOUTUBE_API_KEY;
+  const key = process.env.YOUTUBE_API_KEY;
+  if (!key) return false;
+  // 检查 key 长度（YouTube API Key 通常 39 字符左右）
+  if (key.length < 20) return false;
+  // 检查是否是占位符
+  const placeholders = ['your_', 'example', 'placeholder', 'xxx', 'changeme', 'replace_me'];
+  const keyLower = key.toLowerCase();
+  for (const p of placeholders) {
+    if (keyLower.includes(p)) return false;
+  }
+  return true;
 }
 
 /**

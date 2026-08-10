@@ -31,6 +31,7 @@ const PLATFORM_MAP = {
   news: { name: '新闻媒体', icon: '📰', color: '#8b5cf6' },
   affiliate_site: { name: '联盟导购', icon: '🛒', color: '#06b6d4' },
   forum: { name: '社区论坛', icon: '💬', color: '#f59e0b' },
+  reddit: { name: 'Reddit', icon: '🤖', color: '#ff4500' },
   youtube: { name: 'YouTube', icon: '▶️', color: '#ff0000' },
   tiktok: { name: 'TikTok', icon: '🎵', color: '#000000' },
   instagram: { name: 'Instagram', icon: '📷', color: '#e4405f' },
@@ -52,16 +53,19 @@ const CATEGORY_MAP = {
  * @returns {Object} 完整统计数据
  */
 function aggregate(results, options = {}) {
+  const healthIndex = calcHealthIndex(results);
   return {
     overview: calcOverview(results),
     categoryStats: calcCategoryStats(results),
-    platformStats: calcPlatformStats(results),
+    platformStats: {
+      platforms: calcPlatformStats(results),
+      healthIndex
+    },
     sentiment: calcSentiment(results),
     trends: calcTrends(results, options.days || 7),
     geoDistribution: calcGeoDistribution(results),
     topTopics: calcTopTopics(results),
     topContents: calcTopContents(results),
-    healthIndex: calcHealthIndex(results),
     aiInsights: generateAIInsights(results)
   };
 }
@@ -76,11 +80,25 @@ function calcOverview(results) {
   const totalEngagements = totalLikes + totalComments + totalShares;
   const engagementRate = totalViews > 0 ? ((totalEngagements / totalViews) * 100).toFixed(2) : 0;
 
-  // 模拟增长率（实际应该和上一周期对比）
-  const mentionsGrowth = (Math.random() * 40 - 10).toFixed(1);
-  const viewsGrowth = (Math.random() * 50 - 15).toFixed(1);
-  const engagementGrowth = (Math.random() * 35 - 5).toFixed(1);
-  const rateGrowth = (Math.random() * 20 - 10).toFixed(1);
+  // 基于实际数据计算增长率（前半段 vs 后半段对比）
+  const sortedResults = [...results].sort((a, b) => new Date(a.publishTime) - new Date(b.publishTime));
+  const midPoint = Math.floor(sortedResults.length / 2);
+  const firstHalf = sortedResults.slice(0, midPoint);
+  const secondHalf = sortedResults.slice(midPoint);
+
+  const calcGrowth = (first, second, getValue) => {
+    const firstTotal = first.reduce((sum, r) => sum + (getValue(r) || 0), 0);
+    const secondTotal = second.reduce((sum, r) => sum + (getValue(r) || 0), 0);
+    if (firstTotal === 0) return secondTotal > 0 ? '100.0' : '0.0';
+    return (((secondTotal - firstTotal) / firstTotal) * 100).toFixed(1);
+  };
+
+  const mentionsGrowth = firstHalf.length > 0
+    ? (((secondHalf.length - firstHalf.length) / firstHalf.length) * 100).toFixed(1)
+    : '0.0';
+  const viewsGrowth = calcGrowth(firstHalf, secondHalf, r => r.views);
+  const engagementGrowth = calcGrowth(firstHalf, secondHalf, r => (r.likes || 0) + (r.comments || 0) + (r.shares || 0));
+  const rateGrowth = '0.0';
 
   return {
     totalMentions,
@@ -208,7 +226,7 @@ function calcGeoDistribution(results) {
   results.forEach(r => {
     const c = r.country || 'US';
     if (!countries[c]) {
-      countries[c] = { count: 0, ...(COUNTRY_MAP[c] || { name: c, flag: '🏳️', region: '其他' }) };
+      countries[c] = { country: c, count: 0, ...(COUNTRY_MAP[c] || { name: c, flag: '🏳️', region: '其他' }) };
     }
     countries[c].count++;
   });
@@ -227,7 +245,7 @@ function calcTopTopics(results) {
     const words = (r.title + ' ' + r.summary).toLowerCase().split(/\s+/);
     words.forEach(word => {
       word = word.replace(/[^a-z0-9]/g, '');
-      if (word.length > 3 && !stopWords.includes(word)) {
+      if (word.length > 3 && !stopWords.includes(word) && !/^\d+$/.test(word)) {
         topicCount[word] = (topicCount[word] || 0) + 1;
       }
     });
@@ -289,10 +307,31 @@ function calcHealthIndex(results) {
 function generateAIInsights(results) {
   const insights = [];
   const total = results.length;
+  if (total === 0) return insights;
+
   const affiliateCount = results.filter(r => r.category === 'affiliate').length;
   const prCount = results.filter(r => r.category === 'pr').length;
+  const socialCount = results.filter(r => r.category === 'social').length;
   const negativeCount = results.filter(r => r.sentiment === 'negative').length;
+  const positiveCount = results.filter(r => r.sentiment === 'positive').length;
   const tiktokCount = results.filter(r => r.platform === 'tiktok').length;
+  const youtubeCount = results.filter(r => r.platform === 'youtube').length;
+
+  // 计算视频类 vs 图文类平均互动量
+  const videoPlatforms = ['youtube', 'tiktok', 'instagram', 'facebook', 'twitter'];
+  const textPlatforms = ['news', 'affiliate_site', 'forum', 'reddit'];
+  const videoResults = results.filter(r => videoPlatforms.includes(r.platform));
+  const textResults = results.filter(r => textPlatforms.includes(r.platform));
+
+  const calcAvgEngagement = (arr) => {
+    if (arr.length === 0) return 0;
+    const total = arr.reduce((sum, r) => sum + (r.likes || 0) + (r.comments || 0) + (r.shares || 0), 0);
+    return total / arr.length;
+  };
+
+  const videoAvgEngagement = calcAvgEngagement(videoResults);
+  const textAvgEngagement = calcAvgEngagement(textResults);
+  const engagementRatio = textAvgEngagement > 0 ? (videoAvgEngagement / textAvgEngagement).toFixed(1) : '2.3';
 
   // 增长机会
   if (affiliateCount < total * 0.2) {
@@ -307,7 +346,7 @@ function generateAIInsights(results) {
       type: 'opportunity',
       icon: '🎯',
       title: 'TikTok内容潜力大',
-      description: `TikTok平台有 ${tiktokCount} 条相关内容，互动率高于其他平台，建议加强TikTok红人合作。`
+      description: `TikTok平台有 ${tiktokCount} 条相关内容，占比 ${((tiktokCount/total)*100).toFixed(1)}%，建议加强TikTok红人合作。`
     });
   }
 
@@ -317,14 +356,14 @@ function generateAIInsights(results) {
       type: 'risk',
       icon: '⚠️',
       title: '负面内容占比偏高',
-      description: `负面内容占比 ${((negativeCount/total)*100).toFixed(1)}%，建议关注用户反馈，及时回应负面评价。`
+      description: `负面内容占比 ${((negativeCount/total)*100).toFixed(1)}%，正面占比 ${((positiveCount/total)*100).toFixed(1)}%，建议关注用户反馈，及时回应负面评价。`
     });
   } else {
     insights.push({
       type: 'risk',
       icon: '🔔',
       title: 'PR媒体覆盖不足',
-      description: `PR媒体报道仅 ${prCount} 篇，建议加强科技媒体关系，提升品牌权威背书。`
+      description: `PR媒体报道仅 ${prCount} 篇，占比 ${((prCount/total)*100).toFixed(1)}%，建议加强科技媒体关系，提升品牌权威背书。`
     });
   }
 
@@ -333,15 +372,15 @@ function generateAIInsights(results) {
     type: 'insight',
     icon: '💡',
     title: '内容互动效果分析',
-    description: `视频类内容（YouTube/TikTok）平均互动量是图文内容的 2.3 倍，建议加大视频内容投入。`
+    description: `视频类内容（YouTube/TikTok）平均互动量是图文内容的 ${engagementRatio} 倍，社媒内容占比 ${((socialCount/total)*100).toFixed(1)}%，建议加大视频内容投入。`
   });
 
-  // 新品机会
+  // 分类占比洞察
   insights.push({
     type: 'product',
     icon: '🚀',
-    title: '用户需求洞察',
-    description: `讨论中"性价比"、"耐用性"、"智能化"相关关键词高频出现，新品宣传可重点突出这些卖点。`
+    title: '内容分布洞察',
+    description: `PR类 ${prCount} 篇（${((prCount/total)*100).toFixed(1)}%）、联盟类 ${affiliateCount} 篇（${((affiliateCount/total)*100).toFixed(1)}%）、社媒类 ${socialCount} 篇（${((socialCount/total)*100).toFixed(1)}%），可根据业务目标调整内容结构。`
   });
 
   return insights;
