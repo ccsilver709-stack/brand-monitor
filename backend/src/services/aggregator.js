@@ -77,19 +77,20 @@ function calcOverview(results) {
   const engagementRate = totalViews > 0 ? ((totalEngagements / totalViews) * 100).toFixed(2) : 0;
 
   // 模拟增长率（实际应该和上一周期对比）
-  const growth = {
-    mentions: (Math.random() * 40 - 10).toFixed(1),
-    views: (Math.random() * 50 - 15).toFixed(1),
-    engagements: (Math.random() * 35 - 5).toFixed(1),
-    engagementRate: (Math.random() * 20 - 10).toFixed(1)
-  };
+  const mentionsGrowth = (Math.random() * 40 - 10).toFixed(1);
+  const viewsGrowth = (Math.random() * 50 - 15).toFixed(1);
+  const engagementGrowth = (Math.random() * 35 - 5).toFixed(1);
+  const rateGrowth = (Math.random() * 20 - 10).toFixed(1);
 
   return {
     totalMentions,
     totalViews,
-    totalEngagements,
+    totalEngagement: totalEngagements,
     engagementRate,
-    growth
+    mentionsGrowth,
+    viewsGrowth,
+    engagementGrowth,
+    rateGrowth
   };
 }
 
