@@ -666,7 +666,7 @@
     /* Platform cards */
     .platform-grid {
       display: grid;
-      grid-template-columns: repeat(9, 1fr);
+      grid-template-columns: repeat(10, 1fr);
       gap: 12px;
     }
     .platform-card {
@@ -1482,12 +1482,13 @@
 
         <div class="dropdown">
           <button class="filter-btn" onclick="toggleDropdown('channelDropdown')">
-            📡 渠道 <span class="count" id="channelCount">8</span>
+            📡 渠道 <span class="count" id="channelCount">9</span>
           </button>
           <div class="dropdown-menu" id="channelDropdown">
             <label class="dropdown-item"><input type="checkbox" value="news" checked> 📰 新闻媒体</label>
             <label class="dropdown-item"><input type="checkbox" value="affiliate_site" checked> 🛒 联盟导购</label>
             <label class="dropdown-item"><input type="checkbox" value="forum" checked> 💬 社区论坛</label>
+            <label class="dropdown-item"><input type="checkbox" value="reddit" checked> 🤖 Reddit</label>
             <label class="dropdown-item"><input type="checkbox" value="youtube" checked> ▶️ YouTube</label>
             <label class="dropdown-item"><input type="checkbox" value="tiktok" checked> 🎵 TikTok</label>
             <label class="dropdown-item"><input type="checkbox" value="instagram" checked> 📷 Instagram</label>
@@ -1503,7 +1504,7 @@
           <div class="dropdown-menu" id="regionDropdown">
             <label class="dropdown-item"><input type="checkbox" value="US" checked> 🇺🇸 美国</label>
             <label class="dropdown-item"><input type="checkbox" value="DE" checked> 🇩🇪 德国</label>
-            <label class="dropdown-item"><input type="checkbox" value="UK" checked> 🇬🇧 英国</label>
+            <label class="dropdown-item"><input type="checkbox" value="GB" checked> 🇬🇧 英国</label>
             <label class="dropdown-item"><input type="checkbox" value="FR" checked> 🇫🇷 法国</label>
             <label class="dropdown-item"><input type="checkbox" value="SE" checked> 🇸🇪 瑞典</label>
             <label class="dropdown-item"><input type="checkbox" value="JP"> 🇯🇵 日本</label>
@@ -1725,7 +1726,7 @@
       endDate: null,
       keywords: ['Mammotion', 'LUBA', 'YUKA'],
       platforms: ['news', 'affiliate_site', 'forum', 'youtube', 'tiktok', 'instagram', 'facebook', 'twitter'],
-      countries: ['US', 'DE', 'UK', 'FR', 'SE'],
+      countries: ['US', 'DE', 'GB', 'FR', 'SE'],
       projects: [
         { id: 1, name: 'Mammotion 站外流量监测', status: 'active', mentions: 39 },
         { id: 2, name: 'LUBA 产品线', status: 'active', mentions: 28 },
@@ -1744,6 +1745,7 @@
       news: { icon: '📰', name: '新闻媒体', color: '#8b5cf6' },
       affiliate_site: { icon: '🛒', name: '联盟导购', color: '#06b6d4' },
       forum: { icon: '💬', name: '社区论坛', color: '#f59e0b' },
+      reddit: { icon: '🤖', name: 'Reddit', color: '#ff4500' },
       youtube: { icon: '▶️', name: 'YouTube', color: '#ff0000' },
       tiktok: { icon: '🎵', name: 'TikTok', color: '#000000' },
       instagram: { icon: '📷', name: 'Instagram', color: '#e4405f' },
@@ -1752,12 +1754,12 @@
     };
 
     const countryFlags = {
-      US: '🇺🇸', DE: '🇩🇪', UK: '🇬🇧', FR: '🇫🇷', SE: '🇸🇪',
+      US: '🇺🇸', DE: '🇩🇪', GB: '🇬🇧', FR: '🇫🇷', SE: '🇸🇪',
       JP: '🇯🇵', CA: '🇨🇦', AU: '🇦🇺', CN: '🇨🇳', KR: '🇰🇷',
     };
 
     const countryNames = {
-      US: '美国', DE: '德国', UK: '英国', FR: '法国', SE: '瑞典',
+      US: '美国', DE: '德国', GB: '英国', FR: '法国', SE: '瑞典',
       JP: '日本', CA: '加拿大', AU: '澳大利亚', CN: '中国', KR: '韩国',
     };
 
@@ -2727,6 +2729,7 @@
             news: { count: 8 },
             affiliate_site: { count: 8 },
             forum: { count: 5 },
+            reddit: { count: 4 },
             youtube: { count: 6 },
             tiktok: { count: 4 },
             instagram: { count: 3 },
@@ -2774,7 +2777,7 @@
         geoDistribution: [
           { country: 'US', count: 12 },
           { country: 'DE', count: 9 },
-          { country: 'UK', count: 7 },
+          { country: 'GB', count: 7 },
           { country: 'FR', count: 6 },
           { country: 'SE', count: 5 },
         ],
@@ -2806,26 +2809,30 @@
         { title: 'Mammotion LUBA 2 Full Review - 6 Months Later', platform: 'youtube', category: 'social', country: 'US', sentiment: 'positive', views: 450000, likes: 12000, comments: 3200, shares: 5800, publishTime: '2026-08-02' },
         { title: 'I Tested Every Robot Mower So You Dont Have To', platform: 'youtube', category: 'social', country: 'US', sentiment: 'positive', views: 680000, likes: 18000, comments: 5200, shares: 8500, publishTime: '2026-07-28' },
         { title: 'LUBA 2 vs Husqvarna Automower - Honest Comparison', platform: 'youtube', category: 'social', country: 'US', sentiment: 'neutral', views: 320000, likes: 8500, comments: 2100, shares: 3200, publishTime: '2026-07-25' },
-        { title: 'Mammotion YUKA First Look & Setup', platform: 'youtube', category: 'social', country: 'UK', sentiment: 'positive', views: 180000, likes: 4500, comments: 1200, shares: 1800, publishTime: '2026-07-30' },
+        { title: 'Mammotion YUKA First Look & Setup', platform: 'youtube', category: 'social', country: 'GB', sentiment: 'positive', views: 180000, likes: 4500, comments: 1200, shares: 1800, publishTime: '2026-07-30' },
         { title: 'Mammotion LUBA 2 Unboxing and Setup', platform: 'youtube', category: 'social', country: 'DE', sentiment: 'positive', views: 120000, likes: 3200, comments: 850, shares: 1200, publishTime: '2026-08-01' },
         { title: 'This Robot Mower CHANGED My Life 😱 #shorts', platform: 'tiktok', category: 'social', country: 'US', sentiment: 'positive', views: 890000, likes: 85000, comments: 12000, shares: 25000, publishTime: '2026-08-04' },
         { title: 'LUBA 2 Robot Mower Review #lawncare', platform: 'tiktok', category: 'social', country: 'US', sentiment: 'positive', views: 450000, likes: 42000, comments: 6800, shares: 12000, publishTime: '2026-08-01' },
-        { title: 'Mammotion vs Worx - Which is Better?', platform: 'tiktok', category: 'social', country: 'UK', sentiment: 'neutral', views: 280000, likes: 25000, comments: 4200, shares: 7800, publishTime: '2026-07-29' },
+        { title: 'Mammotion vs Worx - Which is Better?', platform: 'tiktok', category: 'social', country: 'GB', sentiment: 'neutral', views: 280000, likes: 25000, comments: 4200, shares: 7800, publishTime: '2026-07-29' },
         { title: 'Mein neuer Rasenroboter! 🇩🇪', platform: 'tiktok', category: 'social', country: 'DE', sentiment: 'positive', views: 195000, likes: 18000, comments: 2800, shares: 5200, publishTime: '2026-08-03' },
         { title: 'My Mammotion LUBA 2 Setup Journey', platform: 'instagram', category: 'social', country: 'US', sentiment: 'positive', views: 85000, likes: 12000, comments: 1800, shares: 2200, publishTime: '2026-08-02' },
         { title: 'Perfect Lawn with Mammotion ✨', platform: 'instagram', category: 'social', country: 'US', sentiment: 'positive', views: 62000, likes: 8500, comments: 1200, shares: 1500, publishTime: '2026-07-31' },
         { title: 'Mammotion YUKA - New Arrival', platform: 'instagram', category: 'social', country: 'SE', sentiment: 'positive', views: 38000, likes: 5200, comments: 720, shares: 980, publishTime: '2026-07-26' },
         { title: 'Mammotion LUBA 2 Owners Group', platform: 'facebook', category: 'social', country: 'US', sentiment: 'positive', views: 45000, likes: 3200, comments: 1500, shares: 800, publishTime: '2026-08-01' },
-        { title: 'Is Mammotion worth the price?', platform: 'facebook', category: 'social', country: 'UK', sentiment: 'neutral', views: 32000, likes: 1800, comments: 950, shares: 450, publishTime: '2026-07-28' },
+        { title: 'Is Mammotion worth the price?', platform: 'facebook', category: 'social', country: 'GB', sentiment: 'neutral', views: 32000, likes: 1800, comments: 950, shares: 450, publishTime: '2026-07-28' },
         { title: 'Mammotion SPINO leaked info', platform: 'facebook', category: 'social', country: 'US', sentiment: 'positive', views: 28000, likes: 2100, comments: 680, shares: 520, publishTime: '2026-07-24' },
         { title: 'Thoughts on Mammotion LUBA 2 after 1 month?', platform: 'forum', category: 'social', country: 'US', sentiment: 'neutral', views: 65000, likes: 890, comments: 1200, shares: 300, publishTime: '2026-08-03' },
         { title: 'Mammotion vs Husqvarna owners thread', platform: 'forum', category: 'social', country: 'US', sentiment: 'neutral', views: 89000, likes: 1200, comments: 2500, shares: 450, publishTime: '2026-07-30' },
         { title: 'LUBA 2 issues and fixes megathread', platform: 'forum', category: 'social', country: 'US', sentiment: 'negative', views: 42000, likes: 560, comments: 890, shares: 200, publishTime: '2026-07-27' },
         { title: 'Mammotion YUKA first impressions', platform: 'forum', category: 'social', country: 'DE', sentiment: 'positive', views: 38000, likes: 480, comments: 720, shares: 180, publishTime: '2026-07-29' },
-        { title: 'Mammotion SPINO release date speculation', platform: 'forum', category: 'social', country: 'UK', sentiment: 'neutral', views: 28000, likes: 320, comments: 560, shares: 120, publishTime: '2026-07-25' },
+        { title: 'Mammotion SPINO release date speculation', platform: 'forum', category: 'social', country: 'GB', sentiment: 'neutral', views: 28000, likes: 320, comments: 560, shares: 120, publishTime: '2026-07-25' },
+        { title: 'Mammotion LUBA 2 Owner Review - 3 Months Later', platform: 'reddit', category: 'social', country: 'US', sentiment: 'positive', views: 45000, likes: 1200, comments: 450, shares: 80, publishTime: '2026-08-01' },
+        { title: 'Best robot mower for steep hills? Mammotion vs others', platform: 'reddit', category: 'social', country: 'US', sentiment: 'neutral', views: 32000, likes: 850, comments: 320, shares: 50, publishTime: '2026-07-28' },
+        { title: 'Mammotion YUKA first impressions from r/lawncare', platform: 'reddit', category: 'social', country: 'GB', sentiment: 'positive', views: 28000, likes: 680, comments: 280, shares: 40, publishTime: '2026-07-30' },
+        { title: 'Mammotion app not working - anyone else having issues?', platform: 'reddit', category: 'social', country: 'DE', sentiment: 'negative', views: 18000, likes: 320, comments: 180, shares: 20, publishTime: '2026-07-26' },
         { title: 'Mammotion LUBA 2 announced - 5 things to know', platform: 'twitter', category: 'social', country: 'US', sentiment: 'positive', views: 120000, likes: 3500, comments: 890, shares: 2100, publishTime: '2026-08-02' },
         { title: 'Just got my Mammotion YUKA! First thoughts', platform: 'twitter', category: 'social', country: 'US', sentiment: 'positive', views: 45000, likes: 1200, comments: 320, shares: 450, publishTime: '2026-07-31' },
-        { title: 'Mammotion quality concerns thread', platform: 'twitter', category: 'social', country: 'UK', sentiment: 'negative', views: 68000, likes: 1800, comments: 650, shares: 920, publishTime: '2026-07-26' },
+        { title: 'Mammotion quality concerns thread', platform: 'twitter', category: 'social', country: 'GB', sentiment: 'negative', views: 68000, likes: 1800, comments: 650, shares: 920, publishTime: '2026-07-26' },
       ];
       return mockItems.map((item, i) => ({ id: i + 1, ...item, url: '#' }));
     }
