@@ -115,8 +115,8 @@ function calcCategoryStats(results) {
     stats[cat] = {
       count: items.length,
       views,
-      engagements,
-      engagementRate: views > 0 ? ((engagements / views) * 100).toFixed(2) : 0,
+      engagement: engagements,
+      rate: views > 0 ? ((engagements / views) * 100).toFixed(2) + '%' : '0%',
       top5,
       ...CATEGORY_MAP[cat]
     };
