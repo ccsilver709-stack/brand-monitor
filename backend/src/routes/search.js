@@ -272,7 +272,26 @@ router.get('/', async (req, res) => {
     if (platforms) {
       const pList = platforms.split(',').map(p => p.trim()).filter(Boolean);
       if (pList.length > 0) {
-        results = results.filter(r => pList.includes(r.platform));
+        // 平台别名映射：前端用的分类名 -> 实际数据源返回的platform值
+        const platformAliases = {
+          'forum': ['forum', 'reddit'],
+          'news': ['news'],
+          'affiliate_site': ['affiliate_site'],
+          'youtube': ['youtube'],
+          'tiktok': ['tiktok'],
+          'instagram': ['instagram'],
+          'facebook': ['facebook'],
+          'twitter': ['twitter'],
+        };
+        
+        // 展开所有匹配的平台值
+        const matchedPlatforms = new Set();
+        pList.forEach(p => {
+          const aliases = platformAliases[p] || [p];
+          aliases.forEach(a => matchedPlatforms.add(a));
+        });
+        
+        results = results.filter(r => matchedPlatforms.has(r.platform));
       }
     }
 
