@@ -23,10 +23,10 @@ function getMockData() {
  * 将时间范围天数转换为各API的时间参数
  */
 function getTimeParams(days) {
-  if (!days) return { googleNews: null, youtube: null, reddit: 'month', gcs: null };
-  
+  if (!days) return { googleNews: null, youtubePublishedAfter: null, reddit: 'month', gcs: null };
+
   const d = parseInt(days);
-  if (isNaN(d)) return { googleNews: null, youtube: null, reddit: 'month', gcs: null };
+  if (isNaN(d)) return { googleNews: null, youtubePublishedAfter: null, reddit: 'month', gcs: null };
 
   // Google News RSS: h(小时) d(天) w(周) m(月) y(年)
   let googleNews = 'm';
@@ -330,7 +330,7 @@ router.get('/', async (req, res) => {
 
     if (startTime) {
       results = results.filter(r => {
-        // 无 publishTime 或无效日期的结果予以保留，避免误删
+        // 无 publishTime 或无效日期的结果予以保留，避免误删（如 Google Custom Search 结果）
         if (!r.publishTime) return true;
         const publishTime = new Date(r.publishTime);
         if (isNaN(publishTime.getTime())) return true;
