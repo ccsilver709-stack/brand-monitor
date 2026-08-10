@@ -160,7 +160,8 @@ async function searchNews(keywords, options = {}) {
     const parsed = parser.parse(xmlData);
 
     const items = parsed?.rss?.channel?.item || [];
-    const results = items.map((item, index) => formatRSSItem(item, index));
+    const itemArray = Array.isArray(items) ? items : [items];
+    const results = itemArray.map((item, index) => formatRSSItem(item, index));
 
     setCache(cacheKey, results);
     return results;
