@@ -1255,6 +1255,131 @@
     .empty-state-text {
       font-size: 14px;
     }
+    /* 评论模态框 */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 700px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+    }
+    .modal-close:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+    .modal-post-title {
+      padding: 12px 20px;
+      background: var(--bg-tertiary);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border-light);
+    }
+    .modal-body {
+      padding: 16px 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .loading {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 40px 0;
+    }
+    .comment-item {
+      margin-bottom: 16px;
+      padding-left: 12px;
+      border-left: 2px solid var(--border-light);
+    }
+    .comment-item.depth-0 {
+      border-left-color: var(--blue);
+    }
+    .comment-item.depth-1 {
+      border-left-color: var(--purple);
+      margin-left: 20px;
+    }
+    .comment-item.depth-2 {
+      border-left-color: var(--cyan);
+      margin-left: 40px;
+    }
+    .comment-item.depth-3 {
+      border-left-color: var(--green);
+      margin-left: 60px;
+    }
+    .comment-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+    .comment-author {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .comment-score {
+      color: var(--text-muted);
+    }
+    .comment-body {
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-secondary);
+    }
+    .comment-btn {
+      background: none;
+      border: none;
+      color: var(--blue);
+      cursor: pointer;
+      font-size: 12px;
+      padding: 0;
+      margin-left: 4px;
+    }
+    .comment-btn:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -1574,6 +1699,20 @@
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- 评论模态框 -->
+  <div id="commentModal" class="modal-overlay" onclick="closeCommentModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title">💬 Reddit 评论</div>
+        <button class="modal-close" onclick="closeCommentModal()">×</button>
+      </div>
+      <div class="modal-post-title" id="modalPostTitle"></div>
+      <div class="modal-body" id="modalCommentBody">
+        <div class="loading">加载中...</div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -2374,7 +2513,14 @@
             <td>${countryFlags[item.country] || ''} ${countryNames[item.country] || item.country || ''}</td>
             <td><span class="tag ${sentClass}">${item.sentiment || 'neutral'}</span></td>
             <td>${formatNumber(item.views || 0)}</td>
-            <td>${formatNumber(engagement)}</td>
+            <td>
+              ${formatNumber(engagement)}
+              ${item.platform === 'reddit' && item.comments > 0 ? `
+                <button class="comment-btn" onclick="openCommentModal('${item.url}', \`${item.title.replace(/`/g, '\\`').replace(/'/g, "\\'")}\`)" title="查看评论">
+                  💬 ${item.comments}
+                </button>
+              ` : ''}
+            </td>
             <td>${formatDate(item.publishTime)}</td>
           </tr>
         `;
@@ -2420,6 +2566,80 @@
     function goToPage(page) {
       state.currentPage = page;
       renderTable();
+    }
+
+    // ========== Reddit 评论功能 ==========
+    function openCommentModal(postUrl, postTitle) {
+      // 从 URL 中提取帖子 ID
+      const postIdMatch = postUrl.match(/\/comments\/([a-z0-9]+)\//i);
+      if (!postIdMatch) {
+        alert('无法提取帖子 ID');
+        return;
+      }
+      const postId = postIdMatch[1];
+
+      const modal = document.getElementById('commentModal');
+      const titleEl = document.getElementById('modalPostTitle');
+      const bodyEl = document.getElementById('modalCommentBody');
+
+      titleEl.textContent = postTitle;
+      bodyEl.innerHTML = '<div class="loading">加载中...</div>';
+      modal.classList.add('active');
+
+      // 调用 API 获取评论
+      fetch(`/api/search/reddit/comments?post_id=${postId}&limit=20&sort=top&max_depth=3`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.data) {
+            renderComments(data.data.comments);
+          } else {
+            bodyEl.innerHTML = `<div class="loading" style="color: var(--red);">加载失败：${data.error || '未知错误'}</div>`;
+          }
+        })
+        .catch(err => {
+          bodyEl.innerHTML = `<div class="loading" style="color: var(--red);">加载失败：${err.message}</div>`;
+        });
+    }
+
+    function closeCommentModal(event) {
+      if (event && event.target !== event.currentTarget) return;
+      const modal = document.getElementById('commentModal');
+      modal.classList.remove('active');
+    }
+
+    function renderComments(comments) {
+      const bodyEl = document.getElementById('modalCommentBody');
+      if (!comments || comments.length === 0) {
+        bodyEl.innerHTML = '<div class="loading">暂无评论</div>';
+        return;
+      }
+
+      function renderCommentList(commentList) {
+        return commentList.map(comment => {
+          const depth = Math.min(comment.depth || 0, 3);
+          const repliesHtml = comment.replies && comment.replies.length > 0
+            ? renderCommentList(comment.replies)
+            : '';
+          return `
+            <div class="comment-item depth-${depth}">
+              <div class="comment-header">
+                <span class="comment-author">u/${comment.author || '[deleted]'}</span>
+                <span class="comment-score">${comment.score || 0} 分</span>
+              </div>
+              <div class="comment-body">${escapeHtml(comment.body || '')}</div>
+              ${repliesHtml}
+            </div>
+          `;
+        }).join('');
+      }
+
+      bodyEl.innerHTML = renderCommentList(comments);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
     }
 
     // ========== Export ==========

@@ -7,6 +7,7 @@ const googleNewsRSS = require('../services/googleNewsRSS');
 const youtube = require('../services/youtube');
 const reddit = require('../services/reddit');
 const googleCustomSearch = require('../services/googleCustomSearch');
+const redditdate = require('../services/redditdate');
 
 // Mock数据缓存
 let mockDataCache = null;
@@ -384,15 +385,68 @@ router.get('/health', (req, res) => {
       youtube: youtube.isAvailable() ? 'configured' : 'not_configured',
       reddit: reddit.isAvailable() ? 'configured' : 'not_configured',
       googleCustomSearch: googleCustomSearch.isAvailable() ? 'configured' : 'not_configured',
+      redditdate: redditdate.isAvailable() ? 'configured' : 'not_configured',
     },
     cache: {
       googleNewsRSS: googleNewsRSS.getCacheStats(),
       youtube: youtube.getCacheStats(),
       reddit: reddit.getCacheStats(),
       googleCustomSearch: googleCustomSearch.getCacheStats(),
+      redditdate: redditdate.getCacheStats(),
     },
     timestamp: new Date().toISOString(),
   });
+});
+
+/**
+ * GET /api/search/reddit/comments
+ * 获取 Reddit 帖子评论（使用 RedditDate 第三方 API）
+ * 
+ * 参数：
+ * - post_id: Reddit 帖子 ID（必填）
+ * - limit: 评论数量上限（默认20，最大50）
+ * - sort: 排序方式（默认top，可选 confidence/top/new/controversial/old）
+ * - max_depth: 最大深度（默认3，最大5）
+ */
+router.get('/reddit/comments', async (req, res) => {
+  try {
+    const { post_id, limit, sort, max_depth } = req.query;
+
+    if (!post_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'post_id is required',
+      });
+    }
+
+    if (!redditdate.isAvailable()) {
+      return res.status(400).json({
+        success: false,
+        error: 'RedditDate API not configured',
+      });
+    }
+
+    const comments = await redditdate.getPostComments(post_id, {
+      limit: limit ? parseInt(limit) : 20,
+      sort: sort || 'top',
+      maxDepth: max_depth ? parseInt(max_depth) : 3,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        post_id,
+        comments,
+        count: comments.length,
+      },
+    });
+  } catch (e) {
+    console.error('Reddit comments API error:', e.message);
+    res.status(500).json({
+      success: false,
+      error: e.message,
+    });
+  }
 });
 
 module.exports = router;
