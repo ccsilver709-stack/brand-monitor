@@ -80,6 +80,8 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
   const pList = platforms ? platforms.split(',').map(p => p.trim()).filter(Boolean) : [];
   const cList = countries ? countries.split(',').map(c => c.trim()).filter(Boolean) : ['US'];
 
+  const dataSourceDebug = {};
+
   console.log('[Debug] === fetchRealData start ===');
   console.log('[Debug] pList:', JSON.stringify(pList));
   console.log('[Debug] kwList:', JSON.stringify(kwList));
@@ -102,9 +104,13 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
       console.log('[Debug] allResults before push:', allResults.length);
       allResults.push(...results);
       console.log('[Debug] allResults after push:', allResults.length);
+      dataSourceDebug.google_news_rss = { status: 'success', count: results.length };
     } catch (e) {
       console.error('[Google News RSS] Failed:', e.message);
+      dataSourceDebug.google_news_rss = { status: 'error', error: e.message };
     }
+  } else {
+    dataSourceDebug.google_news_rss = { status: 'skipped', reason: 'not in platform list' };
   }
 
   // ===== 2. YouTube Data API v3（视频）=====
@@ -122,9 +128,16 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
       console.log('[Debug] allResults before push:', allResults.length);
       allResults.push(...results);
       console.log('[Debug] allResults after push:', allResults.length);
+      dataSourceDebug.youtube_api = { status: 'success', count: results.length };
     } catch (e) {
       console.error('[YouTube API] Failed:', e.message);
+      dataSourceDebug.youtube_api = { status: 'error', error: e.message };
     }
+  } else {
+    dataSourceDebug.youtube_api = { 
+      status: 'skipped', 
+      reason: youtube.isAvailable() ? 'not in platform list' : 'API key not configured' 
+    };
   }
 
   // ===== 3. Reddit API（社区/社媒）=====
@@ -142,9 +155,16 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
       console.log('[Debug] allResults before push:', allResults.length);
       allResults.push(...results);
       console.log('[Debug] allResults after push:', allResults.length);
+      dataSourceDebug.reddit_api = { status: 'success', count: results.length };
     } catch (e) {
       console.error('[Reddit API] Failed:', e.message);
+      dataSourceDebug.reddit_api = { status: 'error', error: e.message };
     }
+  } else {
+    dataSourceDebug.reddit_api = { 
+      status: 'skipped', 
+      reason: reddit.isAvailable() ? 'not in platform list' : 'not available' 
+    };
   }
 
   // ===== 4. Google Custom Search（Web类 + 社交站点搜索）=====
@@ -171,9 +191,13 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
         });
         console.log(`[Google Custom Search] Got ${results.length} web results`);
         allResults.push(...results);
+        dataSourceDebug.gcs_web = { status: 'success', count: results.length };
       } catch (e) {
         console.error('[Google Custom Search] Web search failed:', e.message);
+        dataSourceDebug.gcs_web = { status: 'error', error: e.message };
       }
+    } else {
+      dataSourceDebug.gcs_web = { status: 'skipped', reason: 'not in platform list' };
     }
 
     // 4b. 社交平台站点搜索（TikTok/Instagram/Facebook/Twitter）
@@ -191,21 +215,35 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
         );
         console.log(`[Google Custom Search] Got ${results.length} social site results`);
         allResults.push(...results);
+        dataSourceDebug.gcs_social_sites = { 
+          status: 'success', 
+          count: results.length,
+          sites: socialSitesToSearch.map(s => s.platform)
+        };
       } catch (e) {
         console.error('[Google Custom Search] Site search failed:', e.message);
+        dataSourceDebug.gcs_social_sites = { status: 'error', error: e.message };
       }
+    } else {
+      dataSourceDebug.gcs_social_sites = { status: 'skipped', reason: 'no social sites in platform list' };
     }
+  } else {
+    dataSourceDebug.google_custom_search = { status: 'skipped', reason: 'API key not configured' };
   }
+
+  console.log('[Debug] === fetchRealData end ===');
+  console.log('[Debug] final allResults length:', allResults.length);
+  console.log('[Debug] dataSourceDebug:', JSON.stringify(dataSourceDebug));
 
   // 如果没有任何结果，返回空数组（前端会显示无数据）
   if (allResults.length === 0) {
-    return [];
+    return { results: [], dataSourceDebug };
   }
 
   // 自动分类
   const classified = classifyBatch(allResults);
 
-  return classified;
+  return { results: classified, dataSourceDebug };
 }
 
 /**
@@ -255,8 +293,11 @@ router.get('/', async (req, res) => {
 
     if (useRealData) {
       console.log(`[Search] Using real data sources for: ${keywords}`);
+      let dataSourceDebug = {};
       try {
-        results = await fetchRealData(keywords, platforms, countries, timeRange);
+        const fetchResult = await fetchRealData(keywords, platforms, countries, timeRange);
+        results = fetchResult.results;
+        dataSourceDebug = fetchResult.dataSourceDebug || {};
         // 如果真实数据为空，fallback到Mock
         if (results.length === 0) {
           console.log('[Search] No real data, falling back to mock');
@@ -266,6 +307,8 @@ router.get('/', async (req, res) => {
         console.error('[Search] Real data failed, falling back to mock:', e.message);
         results = getMockData();
       }
+      // 把dataSourceDebug挂到results上，后面用
+      results._dataSourceDebug = dataSourceDebug;
     } else {
       results = getMockData();
     }
@@ -391,6 +434,7 @@ router.get('/', async (req, res) => {
             acc[r.platform] = (acc[r.platform] || 0) + 1;
             return acc;
           }, {}),
+          dataSourceDebug: results._dataSourceDebug || {},
           filters: {
             keywords,
             platforms,
