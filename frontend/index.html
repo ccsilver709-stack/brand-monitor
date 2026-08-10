@@ -2279,9 +2279,9 @@
       const el = document.getElementById('sentimentChart');
       if (!el) return;
       const chart = echarts.init(el);
-      const positive = sentiment.positive || 15;
-      const neutral = sentiment.neutral || 18;
-      const negative = sentiment.negative || 6;
+      const positive = sentiment.positive?.count ?? sentiment.positive ?? 15;
+      const neutral = sentiment.neutral?.count ?? sentiment.neutral ?? 18;
+      const negative = sentiment.negative?.count ?? sentiment.negative ?? 6;
       const total = positive + neutral + negative;
       const posRate = Math.round((positive / total) * 100);
 
