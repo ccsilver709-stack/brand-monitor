@@ -75,99 +75,82 @@ const SOCIAL_SITES = [
  * 从真实API获取数据（多源合并）
  */
 async function fetchRealData(keywords, platforms, countries, timeRange) {
-  const allResults = [];
   const kwList = keywords.split(',').map(k => k.trim()).filter(Boolean);
   const pList = platforms ? platforms.split(',').map(p => p.trim()).filter(Boolean) : [];
   const cList = countries ? countries.split(',').map(c => c.trim()).filter(Boolean) : ['US'];
 
   const dataSourceDebug = {};
 
-  console.log('[Debug] === fetchRealData start ===');
+  console.log('[Debug] === fetchRealData start (parallel mode) ===');
   console.log('[Debug] pList:', JSON.stringify(pList));
   console.log('[Debug] kwList:', JSON.stringify(kwList));
-  console.log('[Debug] initial allResults length:', allResults.length);
 
   const country = cList[0] || 'US';
   const timeParams = getTimeParams(timeRange);
 
-  // ===== 1. Google News RSS（PR媒体）=====
-  // 不需要 API Key，永远可用
+  // 构建并行任务列表
+  const tasks = [];
+
+  // 1. Google News RSS（PR媒体）
   if (pList.length === 0 || pList.includes('news')) {
-    try {
-      console.log('[Debug] --- Google News RSS start ---');
-      const results = await googleNewsRSS.batchSearch(kwList, {
-        country,
-        language: 'en',
-        timeRange: timeParams.googleNews,
-      });
-      console.log(`[Debug] Google News returned ${results.length} results`);
-      console.log('[Debug] allResults before push:', allResults.length);
-      allResults.push(...results);
-      console.log('[Debug] allResults after push:', allResults.length);
-      dataSourceDebug.google_news_rss = { status: 'success', count: results.length };
-    } catch (e) {
-      console.error('[Google News RSS] Failed:', e.message);
-      dataSourceDebug.google_news_rss = { status: 'error', error: e.message };
-    }
+    tasks.push({
+      name: 'google_news_rss',
+      fn: async () => {
+        const results = await googleNewsRSS.batchSearch(kwList, {
+          country,
+          language: 'en',
+          timeRange: timeParams.googleNews,
+        });
+        return results;
+      }
+    });
   } else {
     dataSourceDebug.google_news_rss = { status: 'skipped', reason: 'not in platform list' };
   }
 
-  // ===== 2. YouTube Data API v3（视频）=====
+  // 2. YouTube Data API v3（视频）
   if (youtube.isAvailable() && (pList.length === 0 || pList.includes('youtube'))) {
-    try {
-      console.log('[Debug] --- YouTube API start ---');
-      const results = await youtube.batchSearch(kwList, {
-        country,
-        language: 'en',
-        maxResults: 20,
-        order: 'relevance',
-        publishedAfter: timeParams.youtubePublishedAfter,
-      });
-      console.log(`[Debug] YouTube returned ${results.length} results`);
-      console.log('[Debug] allResults before push:', allResults.length);
-      allResults.push(...results);
-      console.log('[Debug] allResults after push:', allResults.length);
-      dataSourceDebug.youtube_api = { status: 'success', count: results.length };
-    } catch (e) {
-      console.error('[YouTube API] Failed:', e.message);
-      dataSourceDebug.youtube_api = { status: 'error', error: e.message };
-    }
+    tasks.push({
+      name: 'youtube_api',
+      fn: async () => {
+        const results = await youtube.batchSearch(kwList, {
+          country,
+          language: 'en',
+          maxResults: 20,
+          order: 'relevance',
+          publishedAfter: timeParams.youtubePublishedAfter,
+        });
+        return results;
+      }
+    });
   } else {
-    dataSourceDebug.youtube_api = { 
-      status: 'skipped', 
-      reason: youtube.isAvailable() ? 'not in platform list' : 'API key not configured' 
+    dataSourceDebug.youtube_api = {
+      status: 'skipped',
+      reason: youtube.isAvailable() ? 'not in platform list' : 'API key not configured'
     };
   }
 
-  // ===== 3. Reddit API（社区/社媒）=====
+  // 3. Reddit API（社区/社媒）
   if (reddit.isAvailable() && (pList.length === 0 || pList.includes('reddit') || pList.includes('forum'))) {
-    try {
-      console.log('[Debug] --- Reddit API start ---');
-      console.log('[Debug] allResults before Reddit call:', allResults.length);
-      const results = await reddit.batchSearch(kwList, {
-        sort: 'relevance',
-        time: timeParams.reddit,
-        limit: 25,
-      });
-      console.log(`[Debug] Reddit returned ${results.length} results`);
-      console.log('[Debug] results is array:', Array.isArray(results));
-      console.log('[Debug] allResults before push:', allResults.length);
-      allResults.push(...results);
-      console.log('[Debug] allResults after push:', allResults.length);
-      dataSourceDebug.reddit_api = { status: 'success', count: results.length };
-    } catch (e) {
-      console.error('[Reddit API] Failed:', e.message);
-      dataSourceDebug.reddit_api = { status: 'error', error: e.message };
-    }
+    tasks.push({
+      name: 'reddit_api',
+      fn: async () => {
+        const results = await reddit.batchSearch(kwList, {
+          sort: 'relevance',
+          time: timeParams.reddit,
+          limit: 25,
+        });
+        return results;
+      }
+    });
   } else {
-    dataSourceDebug.reddit_api = { 
-      status: 'skipped', 
-      reason: reddit.isAvailable() ? 'not in platform list' : 'not available' 
+    dataSourceDebug.reddit_api = {
+      status: 'skipped',
+      reason: reddit.isAvailable() ? 'not in platform list' : 'not available'
     };
   }
 
-  // ===== 4. Google Custom Search（Web类 + 社交站点搜索）=====
+  // 4. Google Custom Search - Web搜索
   if (googleCustomSearch.isAvailable()) {
     const gcsOptions = {
       country,
@@ -175,55 +158,45 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
       dateRestrict: timeParams.gcs,
     };
 
-    // 4a. 联盟营销 / 论坛 / 普通Web搜索
-    const needWebSearch = pList.length === 0 || 
-      pList.includes('affiliate_site') || 
-      pList.includes('forum') || 
+    const needWebSearch = pList.length === 0 ||
+      pList.includes('affiliate_site') ||
+      pList.includes('forum') ||
       pList.includes('web') ||
       pList.includes('blog');
 
     if (needWebSearch) {
-      try {
-        console.log('[Google Custom Search] Web search...');
-        const results = await googleCustomSearch.batchSearch(kwList, {
-          ...gcsOptions,
-          platform: 'web',
-        });
-        console.log(`[Google Custom Search] Got ${results.length} web results`);
-        allResults.push(...results);
-        dataSourceDebug.gcs_web = { status: 'success', count: results.length };
-      } catch (e) {
-        console.error('[Google Custom Search] Web search failed:', e.message);
-        dataSourceDebug.gcs_web = { status: 'error', error: e.message };
-      }
+      tasks.push({
+        name: 'gcs_web',
+        fn: async () => {
+          const results = await googleCustomSearch.batchSearch(kwList, {
+            ...gcsOptions,
+            platform: 'web',
+          });
+          return results;
+        }
+      });
     } else {
       dataSourceDebug.gcs_web = { status: 'skipped', reason: 'not in platform list' };
     }
 
     // 4b. 社交平台站点搜索（TikTok/Instagram/Facebook/Twitter）
-    const socialSitesToSearch = SOCIAL_SITES.filter(s => 
+    const socialSitesToSearch = SOCIAL_SITES.filter(s =>
       pList.length === 0 || pList.includes(s.platform)
     );
 
     if (socialSitesToSearch.length > 0) {
-      try {
-        console.log(`[Google Custom Search] Site search: ${socialSitesToSearch.map(s => s.platform).join(', ')}`);
-        const results = await googleCustomSearch.batchSearchSites(
-          kwList,
-          socialSitesToSearch,
-          gcsOptions
-        );
-        console.log(`[Google Custom Search] Got ${results.length} social site results`);
-        allResults.push(...results);
-        dataSourceDebug.gcs_social_sites = { 
-          status: 'success', 
-          count: results.length,
-          sites: socialSitesToSearch.map(s => s.platform)
-        };
-      } catch (e) {
-        console.error('[Google Custom Search] Site search failed:', e.message);
-        dataSourceDebug.gcs_social_sites = { status: 'error', error: e.message };
-      }
+      tasks.push({
+        name: 'gcs_social_sites',
+        fn: async () => {
+          const results = await googleCustomSearch.batchSearchSites(
+            kwList,
+            socialSitesToSearch,
+            gcsOptions
+          );
+          return results;
+        },
+        meta: { sites: socialSitesToSearch.map(s => s.platform) }
+      });
     } else {
       dataSourceDebug.gcs_social_sites = { status: 'skipped', reason: 'no social sites in platform list' };
     }
@@ -231,8 +204,34 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
     dataSourceDebug.google_custom_search = { status: 'skipped', reason: 'API key not configured' };
   }
 
+  console.log(`[Debug] Running ${tasks.length} parallel tasks: ${tasks.map(t => t.name).join(', ')}`);
+
+  // 并行执行所有任务
+  const results = await Promise.all(
+    tasks.map(async (task) => {
+      try {
+        console.log(`[Debug] Starting task: ${task.name}`);
+        const data = await task.fn();
+        console.log(`[Debug] Task ${task.name} completed with ${data.length} results`);
+        dataSourceDebug[task.name] = { status: 'success', count: data.length, ...(task.meta || {}) };
+        return data;
+      } catch (e) {
+        console.error(`[Debug] Task ${task.name} failed:`, e.message);
+        dataSourceDebug[task.name] = { status: 'error', error: e.message, ...(task.meta || {}) };
+        return [];
+      }
+    })
+  );
+
+  // 合并所有结果
+  const allResults = results.flat();
+
   console.log('[Debug] === fetchRealData end ===');
   console.log('[Debug] final allResults length:', allResults.length);
+  console.log('[Debug] platform distribution:', JSON.stringify(allResults.reduce((acc, r) => {
+    acc[r.platform] = (acc[r.platform] || 0) + 1;
+    return acc;
+  }, {})));
   console.log('[Debug] dataSourceDebug:', JSON.stringify(dataSourceDebug));
 
   // 如果没有任何结果，返回空数组（前端会显示无数据）
