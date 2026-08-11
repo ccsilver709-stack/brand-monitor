@@ -36,6 +36,11 @@ app.get('/', (req, res) => {
   });
 });
 
+// ===== 健康检查（魔搭部署需要）=====
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // ===== 启动服务 =====
 app.listen(PORT, () => {
   console.log(`
