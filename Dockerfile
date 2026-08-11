@@ -4,6 +4,10 @@ FROM node:18-alpine
 # 设置工作目录
 WORKDIR /app
 
+# 设置环境变量（魔搭要求端口7860）
+ENV PORT=7860
+ENV NODE_ENV=production
+
 # 复制 package.json 和 package-lock.json
 COPY package*.json ./
 
@@ -14,7 +18,7 @@ RUN npm install --production
 COPY . .
 
 # 暴露端口
-EXPOSE 3000
+EXPOSE 7860
 
 # 启动应用
 CMD ["node", "backend/src/index.js"]
