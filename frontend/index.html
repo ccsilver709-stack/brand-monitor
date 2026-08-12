@@ -1481,23 +1481,6 @@
         </div>
 
         <div class="dropdown">
-          <button class="filter-btn" onclick="toggleDropdown('channelDropdown')">
-            📡 渠道 <span class="count" id="channelCount">9</span>
-          </button>
-          <div class="dropdown-menu" id="channelDropdown">
-            <label class="dropdown-item"><input type="checkbox" value="news" checked> 📰 新闻媒体</label>
-            <label class="dropdown-item"><input type="checkbox" value="affiliate_site" checked> 🛒 联盟导购</label>
-            <label class="dropdown-item"><input type="checkbox" value="forum" checked> 💬 社区论坛</label>
-            <label class="dropdown-item"><input type="checkbox" value="reddit" checked> 🤖 Reddit</label>
-            <label class="dropdown-item"><input type="checkbox" value="youtube" checked> ▶️ YouTube</label>
-            <label class="dropdown-item"><input type="checkbox" value="tiktok" checked> 🎵 TikTok</label>
-            <label class="dropdown-item"><input type="checkbox" value="instagram" checked> 📷 Instagram</label>
-            <label class="dropdown-item"><input type="checkbox" value="facebook" checked> 📘 Facebook</label>
-            <label class="dropdown-item"><input type="checkbox" value="twitter" checked> 🐦 Twitter/X</label>
-          </div>
-        </div>
-
-        <div class="dropdown">
           <button class="filter-btn" onclick="toggleDropdown('regionDropdown')">
             🌍 地区 <span class="count" id="regionCount">5</span>
           </button>
@@ -1725,7 +1708,7 @@
       startDate: null,
       endDate: null,
       keywords: ['Mammotion', 'LUBA', 'YUKA'],
-      platforms: ['news', 'affiliate_site', 'forum', 'youtube', 'tiktok', 'instagram', 'facebook', 'twitter'],
+      platforms: [],
       countries: ['US', 'DE', 'GB', 'FR', 'SE'],
       projects: [
         { id: 1, name: 'Mammotion 站外流量监测', status: 'active', mentions: 39 },
@@ -1921,9 +1904,7 @@
           { key: 'all', label: '全部' },
           { key: 'facebook', label: 'Facebook' },
           { key: 'twitter', label: 'Twitter/X' },
-          { key: 'forum', label: '社区论坛' },
-          { key: 'positive', label: '正面内容' },
-          { key: 'negative', label: '负面内容' },
+          { key: 'reddit', label: 'Reddit' },
         ],
       };
       const tabs = configs[group] || configs.overview;
@@ -1947,14 +1928,6 @@
         if (!e.target.closest('.dropdown')) {
           document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
         }
-      });
-
-      document.querySelectorAll('#channelDropdown input').forEach(input => {
-        input.addEventListener('change', () => {
-          state.platforms = Array.from(document.querySelectorAll('#channelDropdown input:checked')).map(i => i.value);
-          document.getElementById('channelCount').textContent = state.platforms.length;
-          fetchData();
-        });
       });
 
       document.querySelectorAll('#regionDropdown input').forEach(input => {

@@ -238,29 +238,33 @@ function determineSubCategory(item, category, domain) {
   const text = ((item.title || '') + ' ' + (item.summary || '')).toLowerCase();
 
   if (category === 'pr') {
-    if (text.includes('press release') || text.includes('announce')) return 'press_release';
-    if (text.includes('review') || text.includes('hands-on') || text.includes('tested')) return 'review_article';
-    if (text.includes('award') || text.includes('best of') || text.includes('top ')) return 'award';
-    if (domain.includes('tech') || domain.includes('gizmodo') || domain.includes('verge')) return 'tech_media';
-    return 'industry_media';
+    // 新闻通稿：包含 press release、announces、launches 等
+    if (text.includes('press release') || text.includes('announce') || text.includes('launches') || text.includes('unveils') || text.includes('introduces')) return 'press';
+    // 评测文章：包含 review、hands-on、tested 等
+    if (text.includes('review') || text.includes('hands-on') || text.includes('tested') || text.includes('hands on')) return 'review';
+    // 科技媒体：域名包含 tech、gizmodo、verge、cnet、engadget、wired 等
+    if (domain.includes('tech') || domain.includes('gizmodo') || domain.includes('verge') || domain.includes('cnet') || domain.includes('engadget') || domain.includes('wired') || domain.includes('pcmag') || domain.includes('tomshardware')) return 'tech';
+    // 行业垂直媒体：其他PR媒体
+    return 'vertical';
   }
 
   if (category === 'affiliate') {
-    if (domain.includes('deal') || text.includes('deal') || text.includes('saving')) return 'deal_site';
+    if (domain.includes('deal') || text.includes('deal') || text.includes('saving')) return 'deal';
     if (text.includes('coupon') || text.includes('promo code') || text.includes('discount')) return 'coupon';
-    if (text.includes('best ') || text.includes('top ') || text.includes('review')) return 'review_guide';
-    if (domain.includes('rebate') || domain.includes('cashback') || domain.includes('rakuten')) return 'rebate';
+    if (text.includes('best ') || text.includes('top ') || text.includes('review')) return 'review';
+    if (domain.includes('rebate') || domain.includes('cashback') || domain.includes('rakuten')) return 'cashback';
     if (text.includes('compare') || text.includes('vs ') || text.includes('price')) return 'price_compare';
-    return 'review_guide';
+    return 'review';
   }
 
-  // social
+  // influencer / social 按平台细分
   if (platform === 'youtube') return 'youtube';
   if (platform === 'tiktok') return 'tiktok';
   if (platform === 'instagram') return 'instagram';
   if (platform === 'facebook') return 'facebook';
   if (platform === 'twitter') return 'twitter';
-  if (platform === 'forum' || platform === 'reddit') return 'forum';
+  if (platform === 'reddit') return 'reddit';
+  if (platform === 'forum') return 'forum';
   return platform || 'social';
 }
 
