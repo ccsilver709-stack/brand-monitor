@@ -285,6 +285,7 @@ router.get('/', async (req, res) => {
     // ===== 1. 获取原始数据 =====
     let results;
     let rawResults = []; // 保存筛选前的原始数据
+    let currentDataSourceDebug = {}; // 保存数据源调试信息，避免filter后丢失
     const hasRealDataSources = 
       youtube.isAvailable() || 
       reddit.isAvailable() || 
@@ -312,8 +313,8 @@ router.get('/', async (req, res) => {
         results = getMockData();
         rawResults = [...results];
       }
-      // 把dataSourceDebug挂到results上，后面用
-      results._dataSourceDebug = dataSourceDebug;
+      // 把dataSourceDebug保存到单独变量，避免filter后丢失
+      currentDataSourceDebug = dataSourceDebug;
     } else {
       results = getMockData();
     }
@@ -443,7 +444,7 @@ router.get('/', async (req, res) => {
             acc[r.platform] = (acc[r.platform] || 0) + 1;
             return acc;
           }, {}),
-          dataSourceDebug: results._dataSourceDebug || {},
+          dataSourceDebug: currentDataSourceDebug,
           dataSourceStatus: {
             youtube: youtube.isAvailable(),
             reddit: reddit.isAvailable(),
