@@ -282,6 +282,7 @@ router.get('/', async (req, res) => {
 
     // ===== 1. 获取原始数据 =====
     let results;
+    let rawResults = []; // 保存筛选前的原始数据
     const hasRealDataSources = 
       youtube.isAvailable() || 
       reddit.isAvailable() || 
@@ -296,15 +297,18 @@ router.get('/', async (req, res) => {
       try {
         const fetchResult = await fetchRealData(keywords, platforms, countries, timeRange);
         results = fetchResult.results;
+        rawResults = [...results]; // 保存筛选前的原始数据
         dataSourceDebug = fetchResult.dataSourceDebug || {};
         // 如果真实数据为空，fallback到Mock
         if (results.length === 0) {
           console.log('[Search] No real data, falling back to mock');
           results = getMockData();
+          rawResults = [...results];
         }
       } catch (e) {
         console.error('[Search] Real data failed, falling back to mock:', e.message);
         results = getMockData();
+        rawResults = [...results];
       }
       // 把dataSourceDebug挂到results上，后面用
       results._dataSourceDebug = dataSourceDebug;
@@ -428,12 +432,27 @@ router.get('/', async (req, res) => {
         dataSource: useRealData ? 'real' : 'mock',
         dataSources: dataSources,
         debug: {
-          totalBeforeFilter: results.length,
+          totalBeforeFilter: rawResults.length,
+          platformCountsBeforeFilter: rawResults.reduce((acc, r) => {
+            acc[r.platform] = (acc[r.platform] || 0) + 1;
+            return acc;
+          }, {}),
           platformCounts: results.reduce((acc, r) => {
             acc[r.platform] = (acc[r.platform] || 0) + 1;
             return acc;
           }, {}),
           dataSourceDebug: results._dataSourceDebug || {},
+          dataSourceStatus: {
+            youtube: youtube.isAvailable(),
+            reddit: reddit.isAvailable(),
+            googleCustomSearch: googleCustomSearch.isAvailable(),
+            googleNewsRSS: true,
+            env: {
+              YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY ? 'configured' : 'missing',
+              GOOGLE_API_KEY: process.env.GOOGLE_API_KEY ? 'configured' : 'missing',
+              GOOGLE_CX: process.env.GOOGLE_CX ? 'configured' : 'missing',
+            }
+          },
           filters: {
             keywords,
             platforms,
