@@ -2385,6 +2385,9 @@
     function renderCompareTrendChart(projectA, projectB, trendsA, trendsB) {
       const el = document.getElementById('trendChart');
       if (!el || typeof echarts === 'undefined') return;
+      // 先清空已有ECharts实例
+      const existingChart = echarts.getInstanceByDom(el);
+      if (existingChart) existingChart.dispose();
       
       const chart = echarts.init(el);
       const dates = trendsA.map(t => t.date);
@@ -2421,23 +2424,28 @@
     }
 
     function renderComparePieChart(projectA, projectB, statsA, statsB) {
-      // 简单展示两个项目的渠道分布对比文字
       const el = document.getElementById('pieChart');
       if (!el) return;
+      // 先清空ECharts实例
+      const existingChart = echarts.getInstanceByDom(el);
+      if (existingChart) existingChart.dispose();
       
-      // 这里可以用柱状图对比，暂时用文字展示
-      const platformsA = Object.entries(statsA).map(([k, v]) => `${k}: ${v.count || 0}`).join(', ');
-      const platformsB = Object.entries(statsB).map(([k, v]) => `${k}: ${v.count || 0}`).join(', ');
+      // statsA和statsB是platformStats对象，需要取.platforms
+      const platformsA = statsA.platforms || statsA || {};
+      const platformsB = statsB.platforms || statsB || {};
+      
+      const listA = Object.entries(platformsA).map(([k, v]) => `${platformInfo[k]?.name || k}: ${v.count || 0}`).join('、');
+      const listB = Object.entries(platformsB).map(([k, v]) => `${platformInfo[k]?.name || k}: ${v.count || 0}`).join('、');
       
       el.innerHTML = `
         <div style="padding: 15px;">
-          <div style="margin-bottom: 10px;">
-            <div style="font-size: 13px; font-weight: 600; color: #3b82f6;">${projectA.name}</div>
-            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">${platformsA || '暂无数据'}</div>
+          <div style="margin-bottom: 12px;">
+            <div style="font-size: 13px; font-weight: 600; color: #3b82f6; margin-bottom: 4px;">${projectA.name}</div>
+            <div style="font-size: 12px; color: var(--text-muted);">${listA || '暂无数据'}</div>
           </div>
           <div>
-            <div style="font-size: 13px; font-weight: 600; color: #ec4899;">${projectB.name}</div>
-            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">${platformsB || '暂无数据'}</div>
+            <div style="font-size: 13px; font-weight: 600; color: #ec4899; margin-bottom: 4px;">${projectB.name}</div>
+            <div style="font-size: 12px; color: var(--text-muted);">${listB || '暂无数据'}</div>
           </div>
         </div>
       `;
@@ -2446,9 +2454,12 @@
     function renderCompareSentiment(projectA, projectB, sentimentA, sentimentB) {
       const el = document.getElementById('sentimentChart');
       if (!el) return;
+      // 先清空ECharts实例
+      const existingChart = echarts.getInstanceByDom(el);
+      if (existingChart) existingChart.dispose();
       
-      const posA = sentimentA.positive?.percent || 0;
-      const posB = sentimentB.positive?.percent || 0;
+      const posA = sentimentA.positive?.percent || sentimentA.positive || 0;
+      const posB = sentimentB.positive?.percent || sentimentB.positive || 0;
       
       el.innerHTML = `
         <div style="padding: 20px; text-align: center;">
@@ -2503,6 +2514,10 @@
     function renderTrendChart(trends) {
       const el = document.getElementById('trendChart');
       if (!el) return;
+      // 先清空已有ECharts实例
+      const existingChart = echarts.getInstanceByDom(el);
+      if (existingChart) existingChart.dispose();
+      
       const chart = echarts.init(el);
       const dates = trends.map(t => t.date || t.day || '');
       chart.setOption({
@@ -2559,6 +2574,11 @@
     function renderPieChart(platformStats) {
       const el = document.getElementById('pieChart');
       if (!el) return;
+      // 先清空已有内容和ECharts实例
+      el.innerHTML = '';
+      const existingChart = echarts.getInstanceByDom(el);
+      if (existingChart) existingChart.dispose();
+      
       const chart = echarts.init(el);
       const data = Object.entries(platformStats.platforms || {}).map(([key, val]) => ({
         name: platformInfo[key]?.name || key,
@@ -2596,6 +2616,11 @@
     function renderSentimentChart(sentiment) {
       const el = document.getElementById('sentimentChart');
       if (!el) return;
+      // 先清空已有内容和ECharts实例
+      el.innerHTML = '';
+      const existingChart = echarts.getInstanceByDom(el);
+      if (existingChart) existingChart.dispose();
+      
       const chart = echarts.init(el);
       const positive = sentiment.positive?.count ?? sentiment.positive ?? 15;
       const neutral = sentiment.neutral?.count ?? sentiment.neutral ?? 18;
