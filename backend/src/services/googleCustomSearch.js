@@ -73,11 +73,14 @@ function callGoogleSearch(params) {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
+        console.log(`[GCS Debug] HTTP ${res.statusCode}, response length: ${data.length}`);
+        console.log(`[GCS Debug] Response preview: ${data.substring(0, 500)}`);
         try {
           const json = JSON.parse(data);
           if (json.error) {
-            reject(new Error(`Google Custom Search error: ${json.error.message}`));
+            reject(new Error(`Google Custom Search error: ${json.error.message} (HTTP ${res.statusCode})`));
           } else {
+            console.log(`[GCS Debug] items count: ${json.items?.length || 0}, totalResults: ${json.searchInformation?.totalResults || 'N/A'}`);
             resolve(json);
           }
         } catch (e) {

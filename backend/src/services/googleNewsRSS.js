@@ -65,6 +65,8 @@ function fetchRSS(url) {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
+        console.log(`[GoogleNews Debug] HTTP ${res.statusCode}, response length: ${data.length}`);
+        console.log(`[GoogleNews Debug] Response preview: ${data.substring(0, 500)}`);
         if (res.statusCode === 200) {
           resolve(data);
         } else {

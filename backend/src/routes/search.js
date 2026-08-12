@@ -286,6 +286,7 @@ router.get('/', async (req, res) => {
     let results;
     let rawResults = []; // 保存筛选前的原始数据
     let currentDataSourceDebug = {}; // 保存数据源调试信息，避免filter后丢失
+    let actualDataSource = 'mock'; // 实际使用的数据源（real/mock）
     const hasRealDataSources = 
       youtube.isAvailable() || 
       reddit.isAvailable() || 
@@ -307,16 +308,21 @@ router.get('/', async (req, res) => {
           console.log('[Search] No real data, falling back to mock');
           results = getMockData();
           rawResults = [...results];
+          actualDataSource = 'mock';
+        } else {
+          actualDataSource = 'real';
         }
       } catch (e) {
         console.error('[Search] Real data failed, falling back to mock:', e.message);
         results = getMockData();
         rawResults = [...results];
+        actualDataSource = 'mock';
       }
       // 把dataSourceDebug保存到单独变量，避免filter后丢失
       currentDataSourceDebug = dataSourceDebug;
     } else {
       results = getMockData();
+      actualDataSource = 'mock';
     }
 
     // ===== 2. 关键词筛选 =====
@@ -432,7 +438,7 @@ router.get('/', async (req, res) => {
         page: pageNum,
         pageSize: pageSizeNum,
         stats,
-        dataSource: useRealData ? 'real' : 'mock',
+        dataSource: actualDataSource,
         dataSources: dataSources,
         debug: {
           totalBeforeFilter: rawResults.length,

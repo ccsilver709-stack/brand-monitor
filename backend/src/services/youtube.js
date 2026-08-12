@@ -64,11 +64,14 @@ function callYouTubeAPI(endpoint, params) {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
+        console.log(`[YouTube Debug] HTTP ${res.statusCode}, response length: ${data.length}`);
+        console.log(`[YouTube Debug] Response preview: ${data.substring(0, 500)}`);
         try {
           const json = JSON.parse(data);
           if (json.error) {
-            reject(new Error(`YouTube API error: ${json.error.message}`));
+            reject(new Error(`YouTube API error: ${json.error.message} (HTTP ${res.statusCode})`));
           } else {
+            console.log(`[YouTube Debug] items count: ${json.items?.length || 0}, totalResults: ${json.pageInfo?.totalResults || 'N/A'}`);
             resolve(json);
           }
         } catch (e) {
