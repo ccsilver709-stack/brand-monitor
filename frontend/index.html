@@ -1711,10 +1711,16 @@
       platforms: [],
       countries: ['US', 'DE', 'GB', 'FR', 'SE'],
       projects: [
-        { id: 1, name: 'Mammotion 站外流量监测', status: 'active', mentions: 39 },
-        { id: 2, name: 'LUBA 产品线', status: 'active', mentions: 28 },
-        { id: 3, name: '竞品分析', status: 'paused', mentions: 15 },
+        { id: 1, name: 'Mammotion 站外流量监测', status: 'active', mentions: 39, keywords: ['Mammotion', 'LUBA', 'YUKA'] },
+        { id: 2, name: 'LUBA 产品线', status: 'active', mentions: 28, keywords: ['LUBA', 'LUBA 2', 'robot mower'] },
+        { id: 3, name: '竞品分析', status: 'paused', mentions: 15, keywords: ['Husqvarna', 'Worx', 'Robomow'] },
       ],
+      competitors: [
+        { id: 1, name: 'Husqvarna', keywords: ['Husqvarna', 'Automower'] },
+        { id: 2, name: 'Worx', keywords: ['Worx', 'Landroid'] },
+        { id: 3, name: 'Robomow', keywords: ['Robomow', 'robot mower'] },
+      ],
+      currentCompetitor: 1,
       currentProject: 1,
       mode: 'single',
       allData: [],
@@ -1755,6 +1761,12 @@
 
     // ========== Sidebar ==========
     function initSidebar() {
+      // 初始化时同步搜索框和当前项目的关键词
+      const currentProject = state.projects.find(p => p.id === state.currentProject);
+      if (currentProject && currentProject.keywords) {
+        state.keywords = [...currentProject.keywords];
+        document.getElementById('searchInput').value = currentProject.keywords.join(',');
+      }
       renderProjects();
       renderKeywords();
     }
@@ -1779,11 +1791,23 @@
       `).join('');
 
       const compareList = document.getElementById('compareList');
-      compareList.innerHTML = ['Husqvarna', 'Worx', 'Robomow'].map((name, i) => `
-        <div class="compare-item ${i === 0 ? 'active' : ''}" onclick="toggleCompare('${name}')">
-          <span>⚔️</span> ${name}
+      compareList.innerHTML = state.competitors.map(c => `
+        <div class="compare-item ${c.id === state.currentCompetitor ? 'active' : ''}" onclick="selectCompetitor(${c.id})">
+          <span>⚔️</span> ${c.name}
         </div>
       `).join('');
+    }
+
+    function selectCompetitor(id) {
+      state.currentCompetitor = id;
+      const competitor = state.competitors.find(c => c.id === id);
+      if (competitor && competitor.keywords) {
+        state.keywords = [...competitor.keywords];
+        document.getElementById('searchInput').value = competitor.keywords.join(',');
+        renderKeywords();
+      }
+      renderProjects();
+      fetchData();
     }
 
     function renderKeywords() {
@@ -1798,6 +1822,12 @@
 
     function selectProject(id) {
       state.currentProject = id;
+      const project = state.projects.find(p => p.id === id);
+      if (project && project.keywords) {
+        state.keywords = [...project.keywords];
+        document.getElementById('searchInput').value = project.keywords.join(',');
+        renderKeywords();
+      }
       renderProjects();
       fetchData();
     }
