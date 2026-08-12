@@ -249,6 +249,25 @@
       color: #c2410c;
     }
 
+    .compare-select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      background: white;
+      color: var(--text-primary);
+      cursor: pointer;
+      outline: none;
+    }
+    .compare-select:focus {
+      border-color: var(--primary);
+    }
+    .compare-select:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     .keyword-pills {
       display: flex;
       flex-wrap: wrap;
@@ -1719,6 +1738,11 @@
       currentCompetitor: 1,
       currentProject: null,
       mode: 'single',
+      // 竞品对比模式下的两个对比项目
+      compareProjectA: null,
+      compareProjectB: null,
+      compareStatsA: null,
+      compareStatsB: null,
       allData: [],
       stats: null,
       currentPage: 1,
@@ -1800,23 +1824,111 @@
       }
 
       const compareList = document.getElementById('compareList');
-      compareList.innerHTML = state.competitors.map(c => `
-        <div class="compare-item ${c.id === state.currentCompetitor ? 'active' : ''}" onclick="selectCompetitor(${c.id})">
-          <span>⚔️</span> ${c.name}
-        </div>
-      `).join('');
+      
+      if (state.projects.length === 0) {
+        compareList.innerHTML = `
+          <div style="padding: 15px; text-align: center; color: var(--text-muted); font-size: 12px;">
+            暂无项目，请先创建监控项目
+          </div>
+        `;
+      } else if (state.projects.length < 2) {
+        compareList.innerHTML = `
+          <div style="padding: 15px; text-align: center; color: var(--text-muted); font-size: 12px;">
+            至少需要2个项目才能对比
+          </div>
+        `;
+      } else {
+        // 显示项目A和项目B的选择
+        const projectA = state.projects.find(p => p.id === state.compareProjectA);
+        const projectB = state.projects.find(p => p.id === state.compareProjectB);
+        
+        compareList.innerHTML = `
+          <div style="margin-bottom: 12px;">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">📊 对比项目 A</div>
+            <select class="compare-select" onchange="selectCompareProject('A', this.value)">
+              <option value="">请选择项目</option>
+              ${state.projects.map(p => `
+                <option value="${p.id}" ${p.id === state.compareProjectA ? 'selected' : ''}>${p.name}</option>
+              `).join('')}
+            </select>
+          </div>
+          <div style="margin-bottom: 12px;">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">⚔️ 对比项目 B</div>
+            <select class="compare-select" onchange="selectCompareProject('B', this.value)">
+              <option value="">请选择项目</option>
+              ${state.projects.map(p => `
+                <option value="${p.id}" ${p.id === state.compareProjectB ? 'selected' : ''}>${p.name}</option>
+              `).join('')}
+            </select>
+          </div>
+          <button class="btn btn-primary" style="width: 100%; font-size: 13px; padding: 8px;" onclick="startCompare()" ${(!state.compareProjectA || !state.compareProjectB) ? 'disabled' : ''}>
+            🔍 开始对比
+          </button>
+        `;
+      }
     }
 
-    function selectCompetitor(id) {
-      state.currentCompetitor = id;
-      const competitor = state.competitors.find(c => c.id === id);
-      if (competitor && competitor.keywords) {
-        state.keywords = [...competitor.keywords];
-        document.getElementById('searchInput').value = competitor.keywords.join(',');
-        renderKeywords();
+    function selectCompareProject(which, projectId) {
+      const id = projectId ? parseInt(projectId) : null;
+      if (which === 'A') {
+        state.compareProjectA = id;
+      } else {
+        state.compareProjectB = id;
       }
       renderProjects();
-      fetchData();
+    }
+
+    async function startCompare() {
+      if (!state.compareProjectA || !state.compareProjectB) {
+        alert('请选择两个对比项目');
+        return;
+      }
+      
+      const projectA = state.projects.find(p => p.id === state.compareProjectA);
+      const projectB = state.projects.find(p => p.id === state.compareProjectB);
+      
+      if (!projectA || !projectB) return;
+      
+      showLoading();
+      
+      try {
+        // 分别获取两个项目的数据
+        const [dataA, dataB] = await Promise.all([
+          fetchProjectData(projectA.keywords),
+          fetchProjectData(projectB.keywords),
+        ]);
+        
+        state.compareStatsA = dataA;
+        state.compareStatsB = dataB;
+        
+        // 渲染对比仪表盘
+        renderCompareDashboard(projectA, projectB, dataA, dataB);
+      } catch (e) {
+        console.error('对比数据获取失败:', e);
+        alert('对比数据获取失败，请重试');
+      }
+      
+      hideLoading();
+    }
+
+    async function fetchProjectData(keywords) {
+      const params = new URLSearchParams({
+        keywords: keywords.join(','),
+        platforms: state.platforms.join(','),
+        countries: state.countries.join(','),
+        timeRange: state.timeRange,
+        category: state.currentGroup === 'overview' ? 'all' : state.currentGroup,
+        subCategory: state.currentSub,
+        page: 1,
+        pageSize: 100,
+      });
+      
+      if (state.startDate) params.append('startDate', state.startDate);
+      if (state.endDate) params.append('endDate', state.endDate);
+      
+      const res = await fetch(`/api/search?${params}`);
+      const data = await res.json();
+      return data.success ? data.data.stats : null;
     }
 
     function renderKeywords() {
@@ -1875,6 +1987,26 @@
         btn.classList.toggle('active', (i === 0 && mode === 'single') || (i === 1 && mode === 'compare'));
       });
       document.getElementById('compareSection').style.display = mode === 'compare' ? 'flex' : 'none';
+      
+      // 切换到单项目模式时，恢复单项目数据
+      if (mode === 'single' && state.currentProject) {
+        const project = state.projects.find(p => p.id === state.currentProject);
+        if (project && project.keywords) {
+          state.keywords = [...project.keywords];
+          document.getElementById('searchInput').value = project.keywords.join(',');
+          renderKeywords();
+          fetchData();
+        }
+      }
+      
+      // 切换到对比模式时，如果已有对比数据，重新渲染
+      if (mode === 'compare' && state.compareStatsA && state.compareStatsB) {
+        const projectA = state.projects.find(p => p.id === state.compareProjectA);
+        const projectB = state.projects.find(p => p.id === state.compareProjectB);
+        if (projectA && projectB) {
+          renderCompareDashboard(projectA, projectB, state.compareStatsA, state.compareStatsB);
+        }
+      }
     }
 
     function addKeyword() {
@@ -2202,6 +2334,134 @@
 
       // Table
       renderTable();
+    }
+
+    // ========== Compare Dashboard ==========
+    function renderCompareDashboard(projectA, projectB, statsA, statsB) {
+      if (!statsA || !statsB) return;
+
+      // 显示对比标题
+      const dashboardContent = document.getElementById('dashboardContent');
+      
+      // 概览指标对比
+      document.getElementById('totalMentions').innerHTML = `
+        <div style="font-size: 20px; font-weight: 600;">${formatNumber(statsA.overview.totalMentions)}</div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">${projectA.name}</div>
+        <div style="font-size: 16px; font-weight: 600; margin-top: 8px; color: #ec4899;">${formatNumber(statsB.overview.totalMentions)}</div>
+        <div style="font-size: 12px; color: var(--text-muted);">${projectB.name}</div>
+      `;
+      
+      document.getElementById('totalViews').innerHTML = `
+        <div style="font-size: 20px; font-weight: 600;">${formatNumber(statsA.overview.totalViews)}</div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">${projectA.name}</div>
+        <div style="font-size: 16px; font-weight: 600; margin-top: 8px; color: #ec4899;">${formatNumber(statsB.overview.totalViews)}</div>
+        <div style="font-size: 12px; color: var(--text-muted);">${projectB.name}</div>
+      `;
+      
+      document.getElementById('totalEngagement').innerHTML = `
+        <div style="font-size: 20px; font-weight: 600;">${formatNumber(statsA.overview.totalEngagement)}</div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">${projectA.name}</div>
+        <div style="font-size: 16px; font-weight: 600; margin-top: 8px; color: #ec4899;">${formatNumber(statsB.overview.totalEngagement)}</div>
+        <div style="font-size: 12px; color: var(--text-muted);">${projectB.name}</div>
+      `;
+      
+      document.getElementById('engagementRate').innerHTML = `
+        <div style="font-size: 20px; font-weight: 600;">${statsA.overview.engagementRate}%</div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">${projectA.name}</div>
+        <div style="font-size: 16px; font-weight: 600; margin-top: 8px; color: #ec4899;">${statsB.overview.engagementRate}%</div>
+        <div style="font-size: 12px; color: var(--text-muted);">${projectB.name}</div>
+      `;
+
+      // 趋势图对比（两条曲线）
+      renderCompareTrendChart(projectA, projectB, statsA.trends || [], statsB.trends || []);
+      
+      // 渠道分布对比
+      renderComparePieChart(projectA, projectB, statsA.platformStats || {}, statsB.platformStats || {});
+      
+      // 情感分析对比
+      renderCompareSentiment(projectA, projectB, statsA.sentiment || {}, statsB.sentiment || {});
+    }
+
+    function renderCompareTrendChart(projectA, projectB, trendsA, trendsB) {
+      const el = document.getElementById('trendChart');
+      if (!el || typeof echarts === 'undefined') return;
+      
+      const chart = echarts.init(el);
+      const dates = trendsA.map(t => t.date);
+      
+      chart.setOption({
+        tooltip: { trigger: 'axis' },
+        legend: { data: [projectA.name, projectB.name], bottom: 0 },
+        grid: { left: '3%', right: '4%', bottom: '10%', top: '10%', containLabel: true },
+        xAxis: { type: 'category', boundaryGap: false, data: dates },
+        yAxis: { type: 'value' },
+        series: [
+          {
+            name: projectA.name,
+            type: 'line',
+            smooth: true,
+            data: trendsA.map(t => t.total),
+            areaStyle: { opacity: 0.1 },
+            lineStyle: { color: '#3b82f6', width: 2 },
+            itemStyle: { color: '#3b82f6' },
+          },
+          {
+            name: projectB.name,
+            type: 'line',
+            smooth: true,
+            data: trendsB.map(t => t.total),
+            areaStyle: { opacity: 0.1 },
+            lineStyle: { color: '#ec4899', width: 2 },
+            itemStyle: { color: '#ec4899' },
+          },
+        ],
+      });
+      
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function renderComparePieChart(projectA, projectB, statsA, statsB) {
+      // 简单展示两个项目的渠道分布对比文字
+      const el = document.getElementById('pieChart');
+      if (!el) return;
+      
+      // 这里可以用柱状图对比，暂时用文字展示
+      const platformsA = Object.entries(statsA).map(([k, v]) => `${k}: ${v.count || 0}`).join(', ');
+      const platformsB = Object.entries(statsB).map(([k, v]) => `${k}: ${v.count || 0}`).join(', ');
+      
+      el.innerHTML = `
+        <div style="padding: 15px;">
+          <div style="margin-bottom: 10px;">
+            <div style="font-size: 13px; font-weight: 600; color: #3b82f6;">${projectA.name}</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">${platformsA || '暂无数据'}</div>
+          </div>
+          <div>
+            <div style="font-size: 13px; font-weight: 600; color: #ec4899;">${projectB.name}</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">${platformsB || '暂无数据'}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderCompareSentiment(projectA, projectB, sentimentA, sentimentB) {
+      const el = document.getElementById('sentimentChart');
+      if (!el) return;
+      
+      const posA = sentimentA.positive?.percent || 0;
+      const posB = sentimentB.positive?.percent || 0;
+      
+      el.innerHTML = `
+        <div style="padding: 20px; text-align: center;">
+          <div style="margin-bottom: 15px;">
+            <div style="font-size: 28px; font-weight: 700; color: #3b82f6;">${posA}%</div>
+            <div style="font-size: 12px; color: var(--text-muted);">${projectA.name} 正面占比</div>
+          </div>
+          <div>
+            <div style="font-size: 24px; font-weight: 700; color: #ec4899;">${posB}%</div>
+            <div style="font-size: 12px; color: var(--text-muted);">${projectB.name} 正面占比</div>
+          </div>
+        </div>
+      `;
     }
 
     function setChange(id, value) {
