@@ -1710,18 +1710,14 @@
       keywords: ['Mammotion', 'LUBA', 'YUKA'],
       platforms: [],
       countries: ['US', 'DE', 'GB', 'FR', 'SE'],
-      projects: [
-        { id: 1, name: 'Mammotion 站外流量监测', status: 'active', mentions: 39, keywords: ['Mammotion', 'LUBA', 'YUKA'] },
-        { id: 2, name: 'LUBA 产品线', status: 'active', mentions: 28, keywords: ['LUBA', 'LUBA 2', 'robot mower'] },
-        { id: 3, name: '竞品分析', status: 'paused', mentions: 15, keywords: ['Husqvarna', 'Worx', 'Robomow'] },
-      ],
+      projects: [],
       competitors: [
         { id: 1, name: 'Husqvarna', keywords: ['Husqvarna', 'Automower'] },
         { id: 2, name: 'Worx', keywords: ['Worx', 'Landroid'] },
         { id: 3, name: 'Robomow', keywords: ['Robomow', 'robot mower'] },
       ],
       currentCompetitor: 1,
-      currentProject: 1,
+      currentProject: null,
       mode: 'single',
       allData: [],
       stats: null,
@@ -1761,11 +1757,13 @@
 
     // ========== Sidebar ==========
     function initSidebar() {
-      // 初始化时同步搜索框和当前项目的关键词
-      const currentProject = state.projects.find(p => p.id === state.currentProject);
-      if (currentProject && currentProject.keywords) {
-        state.keywords = [...currentProject.keywords];
-        document.getElementById('searchInput').value = currentProject.keywords.join(',');
+      // 初始化时，如果有当前项目，同步搜索框和关键词
+      if (state.currentProject) {
+        const currentProject = state.projects.find(p => p.id === state.currentProject);
+        if (currentProject && currentProject.keywords) {
+          state.keywords = [...currentProject.keywords];
+          document.getElementById('searchInput').value = currentProject.keywords.join(',');
+        }
       }
       renderProjects();
       renderKeywords();
@@ -1773,22 +1771,33 @@
 
     function renderProjects() {
       const list = document.getElementById('projectList');
-      list.innerHTML = state.projects.map(p => `
-        <div class="project-item ${p.id === state.currentProject ? 'active' : ''}" onclick="selectProject(${p.id})">
-          <div class="project-top">
-            <span class="project-name">${p.name}</span>
-            <span class="project-status" style="background: ${p.status === 'active' ? 'var(--green)' : 'var(--text-muted)'}"></span>
+      
+      if (state.projects.length === 0) {
+        list.innerHTML = `
+          <div style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px;">
+            <div style="font-size: 32px; margin-bottom: 8px;">📋</div>
+            <div>暂无监控项目</div>
+            <div style="margin-top: 4px; font-size: 12px;">输入关键词后点击"开始监控"</div>
           </div>
-          <div class="project-meta">
-            <span>${p.mentions} 条提及</span>
-            <span>${p.status === 'active' ? '监控中' : '已暂停'}</span>
+        `;
+      } else {
+        list.innerHTML = state.projects.map(p => `
+          <div class="project-item ${p.id === state.currentProject ? 'active' : ''}" onclick="selectProject(${p.id})">
+            <div class="project-top">
+              <span class="project-name">${p.name}</span>
+              <span class="project-status" style="background: ${p.status === 'active' ? 'var(--green)' : 'var(--text-muted)'}"></span>
+            </div>
+            <div class="project-meta">
+              <span>${p.mentions} 条提及</span>
+              <span>${p.status === 'active' ? '监控中' : '已暂停'}</span>
+            </div>
+            <div class="project-actions">
+              <button class="project-action-btn" title="重命名" onclick="event.stopPropagation(); renameProject(${p.id})">✏️</button>
+              <button class="project-action-btn danger" title="删除" onclick="event.stopPropagation(); deleteProject(${p.id})">🗑️</button>
+            </div>
           </div>
-          <div class="project-actions">
-            <button class="project-action-btn" title="重命名" onclick="event.stopPropagation(); renameProject(${p.id})">✏️</button>
-            <button class="project-action-btn danger" title="删除" onclick="event.stopPropagation(); deleteProject(${p.id})">🗑️</button>
-          </div>
-        </div>
-      `).join('');
+        `).join('');
+      }
 
       const compareList = document.getElementById('compareList');
       compareList.innerHTML = state.competitors.map(c => `
@@ -2049,8 +2058,54 @@
     }
 
     function startMonitor() {
-      alert('监控已启动！正在抓取最新数据...');
-      fetchData();
+      const input = document.getElementById('searchInput');
+      const keywords = input.value.split(',').map(k => k.trim()).filter(k => k);
+      
+      if (keywords.length === 0) {
+        alert('请先输入关键词');
+        return;
+      }
+      
+      // 检查是否已存在相同关键词的项目
+      const existingProject = state.projects.find(p => 
+        p.keywords && p.keywords.join(',').toLowerCase() === keywords.join(',').toLowerCase()
+      );
+      
+      if (existingProject) {
+        // 已存在，直接切换到该项目
+        state.currentProject = existingProject.id;
+        state.keywords = [...existingProject.keywords];
+        renderProjects();
+        fetchData();
+        return;
+      }
+      
+      // 创建新项目
+      const newId = state.projects.length > 0 ? Math.max(...state.projects.map(p => p.id)) + 1 : 1;
+      const projectName = keywords.length === 1 ? keywords[0] : keywords.join(' + ');
+      
+      const newProject = {
+        id: newId,
+        name: projectName,
+        status: 'active',
+        mentions: 0,
+        keywords: [...keywords],
+      };
+      
+      state.projects.push(newProject);
+      state.currentProject = newId;
+      state.keywords = [...keywords];
+      
+      renderProjects();
+      renderKeywords();
+      
+      // 拉取数据并更新项目的mentions数量
+      fetchData().then(() => {
+        if (state.stats && state.stats.overview) {
+          newProject.mentions = state.stats.overview.totalMentions || 0;
+          renderProjects();
+        }
+      });
     }
 
     // ========== Data Fetching ==========
