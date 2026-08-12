@@ -179,23 +179,25 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
       dataSourceDebug.gcs_web = { status: 'skipped', reason: 'not in platform list' };
     }
 
-    // 4b. 社交平台站点搜索（TikTok/Instagram/Facebook/Twitter）
+    // 4b. 社交平台站点搜索（TikTok/Instagram/Facebook/Twitter）- 拆分成独立任务方便排查
     const socialSitesToSearch = SOCIAL_SITES.filter(s =>
       pList.length === 0 || pList.includes(s.platform)
     );
 
     if (socialSitesToSearch.length > 0) {
-      tasks.push({
-        name: 'gcs_social_sites',
-        fn: async () => {
-          const results = await googleCustomSearch.batchSearchSites(
-            kwList,
-            socialSitesToSearch,
-            gcsOptions
-          );
-          return results;
-        },
-        meta: { sites: socialSitesToSearch.map(s => s.platform) }
+      socialSitesToSearch.forEach(siteConfig => {
+        tasks.push({
+          name: `gcs_${siteConfig.platform}`,
+          fn: async () => {
+            const results = await googleCustomSearch.batchSearchSites(
+              kwList,
+              [siteConfig],
+              gcsOptions
+            );
+            return results;
+          },
+          meta: { site: siteConfig.site, platform: siteConfig.platform }
+        });
       });
     } else {
       dataSourceDebug.gcs_social_sites = { status: 'skipped', reason: 'no social sites in platform list' };
