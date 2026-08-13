@@ -205,7 +205,8 @@ function parseRSS(xmlContent) {
     if (!entries) return [];
     if (!Array.isArray(entries)) entries = [entries];
 
-    return entries.map((entry, index) => {
+    // 过滤掉subreddit和用户页面，只保留真正的帖子（URL包含/comments/）
+    const posts = entries.map((entry, index) => {
       // 提取 ID
       let id = '';
       if (entry.id) {
@@ -301,6 +302,9 @@ function parseRSS(xmlContent) {
         },
       };
     });
+
+    // 只保留真正的帖子（URL包含/comments/），过滤掉subreddit和用户页面
+    return posts.filter(p => p.url && p.url.includes('/comments/'));
   } catch (e) {
     console.error('Failed to parse Reddit RSS:', e.message);
     return [];

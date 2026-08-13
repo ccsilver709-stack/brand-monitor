@@ -49,8 +49,12 @@ function setCache(key, data) {
 /**
  * 请求 RSS 内容
  */
-function fetchRSS(url) {
+function fetchRSS(url, redirectCount = 0) {
   return new Promise((resolve, reject) => {
+    if (redirectCount > 5) {
+      return reject(new Error('Too many redirects'));
+    }
+
     const options = {
       hostname: 'news.google.com',
       path: url,
@@ -71,6 +75,27 @@ function fetchRSS(url) {
       res.on('end', () => {
         console.log(`[GoogleNews Debug] HTTP ${res.statusCode}, response length: ${data.length}`);
         console.log(`[GoogleNews Debug] Response preview: ${data.substring(0, 500)}`);
+        
+        // 处理重定向
+        if ((res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 303 || res.statusCode === 307 || res.statusCode === 308) && res.headers.location) {
+          const redirectUrl = res.headers.location;
+          console.log(`[GoogleNews Debug] Redirect to: ${redirectUrl}`);
+          
+          // 解析重定向URL
+          try {
+            const parsedUrl = new URL(redirectUrl);
+            // 如果是同域名，只更新path
+            if (parsedUrl.hostname === 'news.google.com') {
+              return fetchRSS(parsedUrl.pathname + parsedUrl.search, redirectCount + 1).then(resolve).catch(reject);
+            } else {
+              // 跨域名重定向（比如consent.google.com），直接拒绝
+              return reject(new Error(`Cross-domain redirect to ${parsedUrl.hostname}, likely consent page`));
+            }
+          } catch (e) {
+            return reject(new Error(`Invalid redirect URL: ${redirectUrl}`));
+          }
+        }
+        
         if (res.statusCode === 200) {
           resolve(data);
         } else {
