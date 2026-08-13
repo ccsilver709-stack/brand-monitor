@@ -1531,6 +1531,9 @@
           </div>
         </div>
 
+        <div id="dataSourceBadge" style="padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; background: #f1f5f9; color: #64748b; margin-right: 12px;">
+          等待数据...
+        </div>
         <div class="action-buttons">
           <button class="btn btn-secondary btn-icon" title="刷新" onclick="refreshData()">🔄</button>
           <button class="btn btn-secondary" onclick="exportExcel()">📊 导出</button>
@@ -2253,6 +2256,7 @@
     // ========== Data Fetching ==========
     async function fetchData() {
       showLoading();
+      let apiSuccess = false;
       try {
         const params = new URLSearchParams({
           keywords: state.keywords.join(','),
@@ -2268,22 +2272,54 @@
         if (state.startDate) params.append('startDate', state.startDate);
         if (state.endDate) params.append('endDate', state.endDate);
 
+        console.log('[Fetch] 请求API:', `/api/search?${params}`);
         const res = await fetch(`/api/search?${params}`);
         const data = await res.json();
+        console.log('[Fetch] API返回:', { success: data.success, dataSource: data.data?.dataSource, total: data.data?.total });
 
         if (data.success) {
           state.allData = data.data.results;
           state.stats = data.data.stats;
           state.filteredData = [...state.allData];
           state.currentPage = 1;
-          renderDashboard();
+          state.lastDataSource = data.data.dataSource || 'real';
+          apiSuccess = true;
+        } else {
+          console.error('[Fetch] API返回success=false:', data);
         }
       } catch (e) {
-        console.error('Fetch error:', e);
-        // Fallback to mock if API fails
+        console.error('[Fetch] API调用失败:', e);
+      }
+      
+      // 渲染放在try外面，避免渲染错误导致误fallback到mock
+      if (apiSuccess) {
+        try {
+          renderDashboard();
+          updateDataSourceBadge('real', state.allData.length);
+        } catch (renderErr) {
+          console.error('[Render] 渲染失败:', renderErr);
+          // 渲染失败也不用mock，显示空数据提示
+        }
+      } else {
+        // 只有API真正失败时才用mock
         renderWithMockData();
+        updateDataSourceBadge('mock', 39);
       }
       hideLoading();
+    }
+
+    function updateDataSourceBadge(source, count) {
+      const badge = document.getElementById('dataSourceBadge');
+      if (!badge) return;
+      if (source === 'real') {
+        badge.textContent = `✅ 真实数据 (${count}条)`;
+        badge.style.background = '#dcfce7';
+        badge.style.color = '#166534';
+      } else {
+        badge.textContent = `⚠️ Mock数据 (${count}条) - API调用失败`;
+        badge.style.background = '#fef3c7';
+        badge.style.color = '#92400e';
+      }
     }
 
     function showLoading() {
