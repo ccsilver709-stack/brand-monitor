@@ -270,9 +270,9 @@ function parseRSS(xmlContent) {
         }
       }
 
-      // RSS 回退时的估算值：根据帖子位置估算互动量
-      const estimatedScore = Math.max(0, Math.floor((25 - index) * 2 + Math.random() * 10));
-      const estimatedComments = Math.max(0, Math.floor((25 - index) * 0.8 + Math.random() * 5));
+      // RSS 回退时的估算值：根据帖子位置估算互动量（去掉随机数，保持可预测）
+      const estimatedScore = Math.max(0, Math.floor((25 - index) * 2));
+      const estimatedComments = Math.max(0, Math.floor((25 - index) * 0.8));
       const estimatedViews = estimatedScore * 10 + estimatedComments * 5;
 
       return {

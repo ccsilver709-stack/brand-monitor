@@ -155,7 +155,7 @@ function calcPlatformStats(results) {
     platforms[p].count++;
     platforms[p].views += r.views || 0;
     platforms[p].engagements += (r.likes || 0) + (r.comments || 0) + (r.shares || 0);
-    platforms[p].growth = (Math.random() * 60 - 20).toFixed(1);
+    platforms[p].growth = '0.0'; // 暂无历史数据对比，暂为0
   });
 
   // 补充平台元信息
@@ -255,7 +255,7 @@ function calcTopTopics(results) {
     .map(([topic, count]) => ({
       topic: topic.charAt(0).toUpperCase() + topic.slice(1),
       count,
-      growth: (Math.random() * 100 - 20).toFixed(1)
+      growth: '0.0' // 暂无历史数据对比，暂为0
     }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 10);
@@ -280,7 +280,7 @@ function calcHealthIndex(results) {
   const sentimentScore = (positive / total) * 100; // 情感正向率
   const engagementDepth = Math.min(100, results.reduce((s, r) => s + (r.likes || 0), 0) / total / 10); // 互动深度
   const reachBreadth = Math.min(100, (platforms / 8) * 60 + (countries / 20) * 40); // 传播广度
-  const growthTrend = 50 + Math.random() * 50; // 增长趋势（模拟）
+  const growthTrend = 0; // 增长趋势（暂无历史数据对比，暂为0）
 
   const overall = Math.round((voiceShare + sentimentScore + engagementDepth + reachBreadth + growthTrend) / 5);
 
@@ -311,6 +311,7 @@ function generateAIInsights(results) {
 
   const affiliateCount = results.filter(r => r.category === 'affiliate').length;
   const prCount = results.filter(r => r.category === 'pr').length;
+  const influencerCount = results.filter(r => r.category === 'influencer').length;
   const socialCount = results.filter(r => r.category === 'social').length;
   const negativeCount = results.filter(r => r.sentiment === 'negative').length;
   const positiveCount = results.filter(r => r.sentiment === 'positive').length;
@@ -331,7 +332,7 @@ function generateAIInsights(results) {
 
   const videoAvgEngagement = calcAvgEngagement(videoResults);
   const textAvgEngagement = calcAvgEngagement(textResults);
-  const engagementRatio = textAvgEngagement > 0 ? (videoAvgEngagement / textAvgEngagement).toFixed(1) : '2.3';
+  const engagementRatio = textAvgEngagement > 0 ? (videoAvgEngagement / textAvgEngagement).toFixed(1) : '0';
 
   // 增长机会
   if (affiliateCount < total * 0.2) {
@@ -380,7 +381,7 @@ function generateAIInsights(results) {
     type: 'product',
     icon: '🚀',
     title: '内容分布洞察',
-    description: `PR类 ${prCount} 篇（${((prCount/total)*100).toFixed(1)}%）、联盟类 ${affiliateCount} 篇（${((affiliateCount/total)*100).toFixed(1)}%）、社媒类 ${socialCount} 篇（${((socialCount/total)*100).toFixed(1)}%），可根据业务目标调整内容结构。`
+    description: `PR类 ${prCount} 篇（${((prCount/total)*100).toFixed(1)}%）、联盟类 ${affiliateCount} 篇（${((affiliateCount/total)*100).toFixed(1)}%）、红人类 ${influencerCount} 篇（${((influencerCount/total)*100).toFixed(1)}%）、社媒类 ${socialCount} 篇（${((socialCount/total)*100).toFixed(1)}%），可根据业务目标调整内容结构。`
   });
 
   return insights;

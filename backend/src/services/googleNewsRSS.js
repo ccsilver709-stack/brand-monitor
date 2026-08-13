@@ -56,8 +56,12 @@ function fetchRSS(url) {
       path: url,
       method: 'GET',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'application/rss+xml, application/xml',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://news.google.com/',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
       },
     };
 
@@ -109,7 +113,7 @@ function formatRSSItem(item, index) {
     url: link,
     displayUrl: '',
     publishTime: new Date(pubDate).toISOString(),
-    views: 1500 + Math.floor(Math.random() * 1000),
+    views: 0, // Google News RSS不提供浏览量数据
     likes: 0,
     comments: 0,
     shares: 0,

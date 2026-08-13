@@ -1001,6 +1001,7 @@
     }
     .tag-pr { background: #f3e8ff; color: #7c3aed; }
     .tag-affiliate { background: #cffafe; color: #0891b2; }
+    .tag-influencer { background: #fce7f3; color: #db2777; }
     .tag-social { background: #dbeafe; color: #2563eb; }
     .tag-positive { background: #d1fae5; color: #059669; }
     .tag-neutral { background: #f3f4f6; color: #6b7280; }
@@ -1606,7 +1607,7 @@
         </div>
 
         <!-- Category modules -->
-        <div class="chart-row chart-row-3">
+        <div class="chart-row chart-row-4">
           <div class="card category-card">
             <div class="card-header">
               <div class="card-title"><span class="icon">📰</span> PR公关</div>
@@ -1622,6 +1623,14 @@
             </div>
             <div class="category-stats" id="affiliateStats"></div>
             <div class="category-top-list" id="affiliateTopList"></div>
+          </div>
+          <div class="card category-card">
+            <div class="card-header">
+              <div class="card-title"><span class="icon">🎬</span> 红人内容</div>
+              <span class="tag tag-influencer">红人</span>
+            </div>
+            <div class="category-stats" id="influencerStats"></div>
+            <div class="category-top-list" id="influencerTopList"></div>
           </div>
           <div class="card category-card">
             <div class="card-header">
@@ -2049,6 +2058,7 @@
           { key: 'all', label: '全部' },
           { key: 'pr', label: 'PR类' },
           { key: 'affiliate', label: '联盟类' },
+          { key: 'influencer', label: '红人类' },
           { key: 'social', label: '社媒类' },
         ],
         pr: [
@@ -2298,7 +2308,7 @@
       const mChange = stats.overview.mentionsGrowth;
       const vChange = stats.overview.viewsGrowth;
       const eChange = stats.overview.engagementGrowth;
-      const rChange = stats.overview.rateGrowth || 2.3;
+      const rChange = stats.overview.rateGrowth || '0.0';
 
       setChange('mentionsChange', mChange);
       setChange('viewsChange', vChange);
@@ -2307,9 +2317,9 @@
 
       // Sparklines
       renderSparkline('sparkline1', stats.trends?.map(t => t.total) || [], '#3b82f6');
-      renderSparkline('sparkline2', stats.trends?.map(t => t.views || t.total * 1000) || [], '#8b5cf6');
-      renderSparkline('sparkline3', stats.trends?.map(t => t.engagement || t.total * 50) || [], '#06b6d4');
-      renderSparkline('sparkline4', stats.trends?.map(t => t.rate || 3 + Math.random()) || [], '#10b981');
+      renderSparkline('sparkline2', stats.trends?.map(t => t.views || 0) || [], '#8b5cf6');
+      renderSparkline('sparkline3', stats.trends?.map(t => t.engagement || 0) || [], '#06b6d4');
+      renderSparkline('sparkline4', stats.trends?.map(t => t.rate || 0) || [], '#10b981');
 
       // Charts
       renderTrendChart(stats.trends || []);
@@ -2323,6 +2333,7 @@
       // Category modules
       renderCategoryModule('pr', stats.categoryStats?.pr || {});
       renderCategoryModule('affiliate', stats.categoryStats?.affiliate || {});
+      renderCategoryModule('influencer', stats.categoryStats?.influencer || {});
       renderCategoryModule('social', stats.categoryStats?.social || {});
 
       // Topics & Geo
@@ -2522,7 +2533,7 @@
       const dates = trends.map(t => t.date || t.day || '');
       chart.setOption({
         tooltip: { trigger: 'axis' },
-        legend: { data: ['PR公关', '联盟营销', '社媒内容'], bottom: 0, textStyle: { fontSize: 12 } },
+        legend: { data: ['PR公关', '联盟营销', '红人内容', '社媒内容'], bottom: 0, textStyle: { fontSize: 12 } },
         grid: { top: 20, right: 20, bottom: 40, left: 50 },
         xAxis: {
           type: 'category',
@@ -2541,7 +2552,7 @@
             type: 'line',
             stack: 'total',
             smooth: true,
-            data: trends.map(t => t.pr || Math.floor(Math.random() * 5)),
+            data: trends.map(t => t.pr || 0),
             lineStyle: { color: '#8b5cf6', width: 2 },
             areaStyle: { color: '#8b5cf620' },
             symbol: 'none',
@@ -2551,9 +2562,19 @@
             type: 'line',
             stack: 'total',
             smooth: true,
-            data: trends.map(t => t.affiliate || Math.floor(Math.random() * 5)),
+            data: trends.map(t => t.affiliate || 0),
             lineStyle: { color: '#06b6d4', width: 2 },
             areaStyle: { color: '#06b6d420' },
+            symbol: 'none',
+          },
+          {
+            name: '红人内容',
+            type: 'line',
+            stack: 'total',
+            smooth: true,
+            data: trends.map(t => t.influencer || 0),
+            lineStyle: { color: '#ec4899', width: 2 },
+            areaStyle: { color: '#ec489920' },
             symbol: 'none',
           },
           {
@@ -2561,7 +2582,7 @@
             type: 'line',
             stack: 'total',
             smooth: true,
-            data: trends.map(t => t.social || Math.floor(Math.random() * 10)),
+            data: trends.map(t => t.social || 0),
             lineStyle: { color: '#3b82f6', width: 2 },
             areaStyle: { color: '#3b82f620' },
             symbol: 'none',
@@ -2664,9 +2685,10 @@
       if (!el) return;
       const chart = echarts.init(el);
       const categories = [
-        { name: 'PR公关', value: categoryStats.pr?.count || 8, color: '#8b5cf6' },
-        { name: '联盟营销', value: categoryStats.affiliate?.count || 8, color: '#06b6d4' },
-        { name: '社媒内容', value: categoryStats.social?.count || 23, color: '#3b82f6' },
+        { name: 'PR公关', value: categoryStats.pr?.count || 0, color: '#8b5cf6' },
+        { name: '联盟营销', value: categoryStats.affiliate?.count || 0, color: '#06b6d4' },
+        { name: '红人内容', value: categoryStats.influencer?.count || 0, color: '#ec4899' },
+        { name: '社媒内容', value: categoryStats.social?.count || 0, color: '#3b82f6' },
       ];
 
       chart.setOption({
@@ -2717,10 +2739,10 @@
       });
 
       // Health index card
-      const health = platformStats.healthIndex || { score: 81, level: '良好' };
+      const health = platformStats.healthIndex || { score: 0, level: '暂无' };
       html += `
         <div class="platform-card health">
-          <div class="health-score">${health.score || 81}</div>
+          <div class="health-score">${health.score || 0}</div>
           <div class="health-label">品牌健康指数</div>
         </div>
       `;
@@ -2736,7 +2758,7 @@
       const count = data.count || 0;
       const views = data.views || 0;
       const engagement = data.engagement || 0;
-      const rate = data.rate || '3.2%';
+      const rate = data.rate || '0%';
 
       statsEl.innerHTML = `
         <div class="category-stat">
@@ -2845,7 +2867,7 @@
       const tbody = document.getElementById('tableBody');
       tbody.innerHTML = pageData.map((item, i) => {
         const engagement = (item.likes || 0) + (item.comments || 0) + (item.shares || 0);
-        const catClass = item.category === 'pr' ? 'tag-pr' : item.category === 'affiliate' ? 'tag-affiliate' : 'tag-social';
+        const catClass = item.category === 'pr' ? 'tag-pr' : item.category === 'affiliate' ? 'tag-affiliate' : item.category === 'influencer' ? 'tag-influencer' : 'tag-social';
         const sentClass = item.sentiment === 'positive' ? 'tag-positive' : item.sentiment === 'negative' ? 'tag-negative' : 'tag-neutral';
         const platInfo = platformInfo[item.platform] || { icon: '📄', name: item.platform };
 
@@ -3065,6 +3087,7 @@
           total: 2 + Math.floor(Math.random() * 5),
           pr: 1 + Math.floor(Math.random() * 3),
           affiliate: 1 + Math.floor(Math.random() * 3),
+          influencer: 1 + Math.floor(Math.random() * 4),
           social: 2 + Math.floor(Math.random() * 6),
         })),
         platformStats: {
@@ -3097,12 +3120,19 @@
             { title: 'Mammotion Cashback Offer', platform: 'Rakuten', engagement: 5800 },
             { title: 'Top 10 Robot Mowers on Sale', platform: 'Slickdeals', engagement: 4500 },
           ]},
-          social: { count: 23, views: 1514983, engagement: 51456, rate: '3.4%', top5: [
+          influencer: { count: 13, views: 1800000, engagement: 62000, rate: '3.4%', top5: [
             { title: 'Unboxing my new LUBA 2!', platform: 'YouTube', engagement: 15000 },
             { title: 'Mammotion LUBA review TikTok', platform: 'TikTok', engagement: 12000 },
-            { title: 'Thoughts on Mammotion YUKA?', platform: 'Reddit', engagement: 8500 },
             { title: 'My Mammotion setup journey', platform: 'Instagram', engagement: 6200 },
+            { title: 'LUBA 2 vs Husqvarna Automower', platform: 'YouTube', engagement: 9800 },
+            { title: 'Robot mower TikTok compilation', platform: 'TikTok', engagement: 7500 },
+          ]},
+          social: { count: 10, views: 514983, engagement: 21456, rate: '4.2%', top5: [
+            { title: 'Thoughts on Mammotion YUKA?', platform: 'Reddit', engagement: 8500 },
             { title: 'Mammotion vs Worx debate', platform: 'Facebook', engagement: 4800 },
+            { title: 'Anyone using LUBA in small yard?', platform: 'Reddit', engagement: 3200 },
+            { title: 'Mammotion customer service experience', platform: 'Twitter', engagement: 2100 },
+            { title: 'LUBA 2 firmware update discussion', platform: 'Reddit', engagement: 2856 },
           ]},
         },
         topTopics: [
