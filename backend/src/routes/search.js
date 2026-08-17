@@ -245,9 +245,9 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
 
   // 自动分类（大模型优先，规则兜底）
   const classified = await classifyBatchAsync(allResults);
-  const results = enrichResultsSentiment(classified);
+  const finalResults = enrichResultsSentiment(classified);
 
-  return { results, dataSourceDebug };
+  return { results: finalResults, dataSourceDebug };
 }
 
 /**
