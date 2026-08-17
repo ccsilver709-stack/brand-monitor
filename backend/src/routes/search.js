@@ -10,6 +10,7 @@ const reddit = require('../services/reddit');
 const googleCustomSearch = require('../services/googleCustomSearch');
 const redditdate = require('../services/redditdate');
 const llmClassifier = require('../services/llmClassifier');
+const dealSitesRSS = require('../services/dealSitesRSS');
 
 // Mock数据缓存
 let mockDataCache = null;
@@ -150,6 +151,23 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
       status: 'skipped',
       reason: reddit.isAvailable() ? 'not in platform list' : 'not available'
     };
+  }
+
+  // 3b. 全球 Deal 站 RSS（联盟营销）
+  if (dealSitesRSS.isAvailable() && (pList.length === 0 || pList.includes('affiliate_site'))) {
+    tasks.push({
+      name: 'deal_sites_rss',
+      fn: async () => {
+        const results = await dealSitesRSS.batchSearch(kwList, {
+          countries: cList,
+          timeRange: parseInt(timeRange) || 30,
+          maxPerSite: 10,
+        });
+        return results;
+      }
+    });
+  } else {
+    dataSourceDebug.deal_sites_rss = { status: 'skipped', reason: 'not in platform list' };
   }
 
   // 4. Google Custom Search - Web搜索
