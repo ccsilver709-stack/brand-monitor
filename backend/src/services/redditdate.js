@@ -219,7 +219,8 @@ async function getUsage() {
  * 检查服务是否可用
  */
 function isAvailable() {
-  return !!process.env.REDDITDATE_API_KEY;
+  const key = process.env.REDDITDATE_API_KEY;
+  return !!(key && !key.includes('your_redditdate'));
 }
 
 /**

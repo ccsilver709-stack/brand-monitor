@@ -40,10 +40,10 @@ const PLATFORM_MAP = {
 };
 
 const CATEGORY_MAP = {
-  pr: { name: 'PR公关', color: '#8b5cf6', icon: '📰' },
-  affiliate: { name: '联盟营销', color: '#06b6d4', icon: '🛒' },
+  pr: { name: 'PR', color: '#8b5cf6', icon: '📰' },
+  affiliate: { name: '联盟', color: '#06b6d4', icon: '🛒' },
   influencer: { name: '红人内容', color: '#ec4899', icon: '🎬' },
-  social: { name: '社媒内容', color: '#3b82f6', icon: '💬' }
+  social: { name: '社区舆情', color: '#3b82f6', icon: '💬' }
 };
 
 /**

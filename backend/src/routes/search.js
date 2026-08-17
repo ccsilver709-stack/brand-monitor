@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { classifyBatch } = require('../services/classifier');
+const { classifyBatchAsync } = require('../services/classifier');
 const { aggregate } = require('../services/aggregator');
 const { generateMockData } = require('../utils/mockData');
 const googleNewsRSS = require('../services/googleNewsRSS');
@@ -8,13 +8,14 @@ const youtube = require('../services/youtube');
 const reddit = require('../services/reddit');
 const googleCustomSearch = require('../services/googleCustomSearch');
 const redditdate = require('../services/redditdate');
+const llmClassifier = require('../services/llmClassifier');
 
 // Mock数据缓存
 let mockDataCache = null;
 
-function getMockData() {
+async function getMockData() {
   if (!mockDataCache) {
-    mockDataCache = classifyBatch(generateMockData());
+    mockDataCache = await classifyBatchAsync(generateMockData());
   }
   return mockDataCache;
 }
@@ -241,8 +242,8 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
     return { results: [], dataSourceDebug };
   }
 
-  // 自动分类
-  const classified = classifyBatch(allResults);
+  // 自动分类（大模型优先，规则兜底）
+  const classified = await classifyBatchAsync(allResults);
 
   return { results: classified, dataSourceDebug };
 }
@@ -255,14 +256,8 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
  * - keywords: 关键词数组（逗号分隔）
  * - platforms: 平台数组（逗号分隔）
  * - countries: 国家代码数组（逗号分隔）
- * - category: 分类（pr/affiliate/social）
- * - subCategory: 细分类型
- * - timeRange: 时间范围（7/30/90天，或自定义startDate/endDate）
- * - startDate: 开始日期（YYYY-MM-DD）
- * - endDate: 结束日期（YYYY-MM-DD）
- * - sentiment: 情感（positive/neutral/negative）
- * - page: 页码
- * - pageSize: 每页数量
+ * - category: 分类（pr/affiliate/influencer/social=社区舆情）
+ * - countries: 地区/国家筛选
  * - useMock: 强制使用Mock数据（调试用）
  */
 router.get('/', async (req, res) => {
@@ -284,16 +279,12 @@ router.get('/', async (req, res) => {
 
     // ===== 1. 获取原始数据 =====
     let results;
-    let rawResults = []; // 保存筛选前的原始数据
-    let currentDataSourceDebug = {}; // 保存数据源调试信息，避免filter后丢失
-    let actualDataSource = 'mock'; // 实际使用的数据源（real/mock）
-    const hasRealDataSources = 
-      youtube.isAvailable() || 
-      reddit.isAvailable() || 
-      googleCustomSearch.isAvailable();
-    
-    // Google News RSS 永远可用，但内容有限，主要还是看其他API
-    const useRealData = hasRealDataSources && useMock !== 'true' && keywords;
+    let rawResults = [];
+    let currentDataSourceDebug = {};
+    let actualDataSource = 'mock';
+
+    // Google News RSS 始终可用；有关键词且非强制 Mock 时走真实拉取
+    const useRealData = useMock !== 'true' && !!keywords;
 
     if (useRealData) {
       console.log(`[Search] Using real data sources for: ${keywords}`);
@@ -301,12 +292,11 @@ router.get('/', async (req, res) => {
       try {
         const fetchResult = await fetchRealData(keywords, platforms, countries, timeRange);
         results = fetchResult.results;
-        rawResults = [...results]; // 保存筛选前的原始数据
+        rawResults = [...results];
         dataSourceDebug = fetchResult.dataSourceDebug || {};
-        // 如果真实数据为空，fallback到Mock
         if (results.length === 0) {
           console.log('[Search] No real data, falling back to mock');
-          results = getMockData();
+          results = await getMockData();
           rawResults = [...results];
           actualDataSource = 'mock';
         } else {
@@ -314,14 +304,13 @@ router.get('/', async (req, res) => {
         }
       } catch (e) {
         console.error('[Search] Real data failed, falling back to mock:', e.message);
-        results = getMockData();
+        results = await getMockData();
         rawResults = [...results];
         actualDataSource = 'mock';
       }
-      // 把dataSourceDebug保存到单独变量，避免filter后丢失
       currentDataSourceDebug = dataSourceDebug;
     } else {
-      results = getMockData();
+      results = await getMockData();
       actualDataSource = 'mock';
     }
 
@@ -423,12 +412,12 @@ router.get('/', async (req, res) => {
     const paginatedResults = results.slice(startIndex, startIndex + pageSizeNum);
 
     // ===== 11. 返回结果 =====
-    // 数据源说明
     const dataSources = [];
-    dataSources.push('google_news_rss'); // Google News RSS 永远可用
+    dataSources.push('google_news_rss');
     if (youtube.isAvailable()) dataSources.push('youtube_api');
     if (reddit.isAvailable()) dataSources.push('reddit_api');
     if (googleCustomSearch.isAvailable()) dataSources.push('google_custom_search');
+    if (redditdate.isAvailable()) dataSources.push('redditdate');
 
     res.json({
       success: true,
@@ -440,6 +429,10 @@ router.get('/', async (req, res) => {
         stats,
         dataSource: actualDataSource,
         dataSources: dataSources,
+        llm: {
+          enabled: llmClassifier.isAvailable(),
+          note: '大模型调用费用由客户自行承担，开发方仅提供对接',
+        },
         debug: {
           totalBeforeFilter: rawResults.length,
           platformCountsBeforeFilter: rawResults.reduce((acc, r) => {
@@ -456,10 +449,14 @@ router.get('/', async (req, res) => {
             reddit: reddit.isAvailable(),
             googleCustomSearch: googleCustomSearch.isAvailable(),
             googleNewsRSS: true,
+            redditdate: redditdate.isAvailable(),
+            llm: llmClassifier.isAvailable(),
             env: {
-              YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY ? 'configured' : 'missing',
-              GOOGLE_API_KEY: process.env.GOOGLE_API_KEY ? 'configured' : 'missing',
-              GOOGLE_CX: process.env.GOOGLE_CX ? 'configured' : 'missing',
+              YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY && !process.env.YOUTUBE_API_KEY.includes('your_') ? 'configured' : 'missing',
+              GOOGLE_API_KEY: process.env.GOOGLE_API_KEY && !String(process.env.GOOGLE_API_KEY).includes('your_') ? 'configured' : 'missing',
+              GOOGLE_CX: process.env.GOOGLE_CX && !String(process.env.GOOGLE_CX).includes('your_') ? 'configured' : 'missing',
+              REDDITDATE_API_KEY: process.env.REDDITDATE_API_KEY && !String(process.env.REDDITDATE_API_KEY).includes('your_') ? 'configured' : 'missing',
+              LLM_API_KEY: process.env.LLM_API_KEY && !String(process.env.LLM_API_KEY).includes('your_') ? 'configured' : 'missing',
             }
           },
           filters: {
@@ -500,11 +497,16 @@ router.get('/health', (req, res) => {
     success: true,
     status: 'ok',
     dataSources: {
-      googleNewsRSS: 'available', // 永远可用
+      googleNewsRSS: 'available',
       youtube: youtube.isAvailable() ? 'configured' : 'not_configured',
       reddit: reddit.isAvailable() ? 'configured' : 'not_configured',
       googleCustomSearch: googleCustomSearch.isAvailable() ? 'configured' : 'not_configured',
       redditdate: redditdate.isAvailable() ? 'configured' : 'not_configured',
+      llm: llmClassifier.isAvailable() ? 'configured' : 'not_configured',
+    },
+    llm: {
+      enabled: llmClassifier.isAvailable(),
+      costNote: '大模型 API 调用费用由客户承担，本项目仅做开发对接',
     },
     cache: {
       googleNewsRSS: googleNewsRSS.getCacheStats(),

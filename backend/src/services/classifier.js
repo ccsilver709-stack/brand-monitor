@@ -1,14 +1,15 @@
 /**
  * 自动分类引擎
- * 输入：内容数据（标题、摘要、URL、平台等）
- * 输出：分类结果 { category, subCategory, confidence, reasons }
- * 
- * 四大分类：
- * - pr: PR公关 / 新闻媒体
- * - affiliate: 联盟营销 / 导购
- * - influencer: 红人内容 / 视频图片创作者（YouTube/TikTok/Instagram）
- * - social: 社交舆情 / 用户讨论（Facebook/Twitter/Reddit/论坛）
+ * 四大分类（客户口径）：
+ * - pr: PR
+ * - affiliate: 联盟
+ * - influencer: 红人内容
+ * - social: 社区舆情
+ *
+ * 优先大模型归类（类别+地区），失败回退规则引擎。
  */
+
+const llmClassifier = require('./llmClassifier');
 
 // ========== 规则库 ==========
 
@@ -208,13 +209,15 @@ function classify(item) {
   const maxScore = Math.max(scores.pr, scores.affiliate, scores.influencer, scores.social);
   const totalScore = scores.pr + scores.affiliate + scores.influencer + scores.social;
   
-  let category = 'social'; // 默认社媒
+  let category = 'social'; // 默认社区舆情
   if (scores.influencer === maxScore && maxScore >= 20) {
     category = 'influencer';
   } else if (scores.affiliate === maxScore && maxScore >= 20) {
     category = 'affiliate';
   } else if (scores.pr === maxScore && maxScore >= 20) {
     category = 'pr';
+  } else if (scores.social === maxScore && maxScore >= 20) {
+    category = 'social';
   }
 
   const confidence = totalScore > 0 ? Math.round((maxScore / totalScore) * 100) : 30;
@@ -280,9 +283,7 @@ function extractDomain(url) {
 }
 
 /**
- * 批量分类
- * @param {Array} items - 内容数组
- * @returns {Array} 带分类结果的内容数组
+ * 批量分类（同步规则引擎，兼容旧调用）
  */
 function classifyBatch(items) {
   return items.map(item => {
@@ -292,13 +293,50 @@ function classifyBatch(items) {
       category: classification.category,
       subCategory: classification.subCategory,
       classificationConfidence: classification.confidence,
-      classificationReasons: classification.reasons
+      classificationReasons: classification.reasons,
+      classificationSource: 'rules',
     };
+  });
+}
+
+/**
+ * 批量分类：大模型优先（类别+地区），失败回退规则
+ */
+async function classifyBatchAsync(items) {
+  if (!items || items.length === 0) return [];
+
+  const ruleResults = classifyBatch(items);
+  let llmResults = null;
+
+  if (llmClassifier.isAvailable()) {
+    try {
+      llmResults = await llmClassifier.classifyBatchWithLLM(items);
+    } catch (e) {
+      console.error('[Classifier] LLM batch failed, using rules:', e.message);
+    }
+  }
+
+  return ruleResults.map((item, idx) => {
+    const llm = llmResults && llmResults[idx];
+    if (!llm || !llm.category) return item;
+
+    const domain = extractDomain(item.url || '');
+    const merged = {
+      ...item,
+      category: llm.category,
+      country: llm.country || item.country || 'US',
+      classificationSource: 'llm',
+      classificationReasons: [`LLM归类:${llm.category}`, ...(item.classificationReasons || [])],
+      classificationConfidence: Math.max(item.classificationConfidence || 0, 85),
+    };
+    merged.subCategory = determineSubCategory(merged, merged.category, domain);
+    return merged;
   });
 }
 
 module.exports = {
   classify,
   classifyBatch,
+  classifyBatchAsync,
   extractDomain
 };

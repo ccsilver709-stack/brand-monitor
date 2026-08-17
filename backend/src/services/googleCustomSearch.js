@@ -263,8 +263,14 @@ async function batchSearchSites(keywords, sites, options = {}) {
 /**
  * 检查是否可用
  */
+function isPlaceholder(value) {
+  if (!value) return true;
+  const v = String(value).toLowerCase();
+  return ['your_', 'example', 'placeholder', 'xxx', 'changeme', 'replace_me'].some(p => v.includes(p));
+}
+
 function isAvailable() {
-  return !!process.env.GOOGLE_API_KEY && !!process.env.GOOGLE_CX;
+  return !isPlaceholder(process.env.GOOGLE_API_KEY) && !isPlaceholder(process.env.GOOGLE_CX);
 }
 
 /**
