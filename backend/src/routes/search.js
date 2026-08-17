@@ -161,7 +161,7 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
         const results = await dealSitesRSS.batchSearch(kwList, {
           countries: cList,
           timeRange: parseInt(timeRange) || 30,
-          maxPerSite: 10,
+          maxPerSite: 20,
         });
         return results;
       }
