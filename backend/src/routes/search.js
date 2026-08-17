@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { classifyBatchAsync } = require('../services/classifier');
+const { enrichResultsSentiment } = require('../utils/sentiment');
 const { aggregate } = require('../services/aggregator');
 const { generateMockData } = require('../utils/mockData');
 const googleNewsRSS = require('../services/googleNewsRSS');
@@ -244,8 +245,9 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
 
   // 自动分类（大模型优先，规则兜底）
   const classified = await classifyBatchAsync(allResults);
+  const results = enrichResultsSentiment(classified);
 
-  return { results: classified, dataSourceDebug };
+  return { results, dataSourceDebug };
 }
 
 /**

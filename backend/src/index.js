@@ -19,20 +19,24 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/search', searchRouter);
 
 // ===== 静态文件（前端）=====
-// 如果前端放在 frontend 目录，可以直接托管
 const frontendPath = path.join(__dirname, '../../frontend');
 app.use(express.static(frontendPath));
 
-// ===== 根路径 =====
+// ===== 根路径：返回前端页面（Railway / 本地直接访问 /）=====
 app.get('/', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
+});
+
+// ===== API 信息 =====
+app.get('/api', (req, res) => {
   res.json({
     name: 'Brand Monitor API',
     version: '1.0.0',
     status: 'running',
     endpoints: {
       search: 'GET /api/search',
-      health: 'GET /api/search/health'
-    }
+      health: 'GET /api/search/health',
+    },
   });
 });
 

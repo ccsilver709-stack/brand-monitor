@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>品牌站外流量监测工具</title>
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <script>if(typeof echarts==='undefined'){document.write('<script src="https://unpkg.com/echarts@5.4.3/dist/echarts.min.js"><\\/script>');}</script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <style>
@@ -1257,7 +1258,7 @@
 
     /* Sentiment gauge card */
     .sentiment-gauge {
-      height: 220px;
+      height: 180px;
     }
     .sentiment-breakdown {
       display: flex;
@@ -1625,6 +1626,7 @@
             </div>
             <div class="card-body">
               <div class="sentiment-gauge" id="sentimentChart"></div>
+              <div class="sentiment-breakdown" id="sentimentBreakdown"></div>
             </div>
           </div>
         </div>
@@ -2339,21 +2341,23 @@
       
       if (mySeq !== fetchSeq) return;
 
-      // 渲染放在try外面，避免渲染错误导致误fallback到mock
+      hideLoading();
+
+      // 渲染放在 try 外；等 Loading 关闭后再画图，避免 ECharts 容器尺寸为 0
       if (apiSuccess) {
-        try {
-          renderDashboard();
-          updateDataSourceBadge('real', state.allData.length);
-        } catch (renderErr) {
-          console.error('[Render] 渲染失败:', renderErr);
-          // 渲染失败也不用mock，显示空数据提示
-        }
+        requestAnimationFrame(() => {
+          if (mySeq !== fetchSeq) return;
+          try {
+            renderDashboard();
+            updateDataSourceBadge('real', state.allData.length);
+          } catch (renderErr) {
+            console.error('[Render] 渲染失败:', renderErr);
+          }
+        });
       } else {
-        // 只有API真正失败时才用mock
         renderWithMockData();
         updateDataSourceBadge('mock', 39);
       }
-      hideLoading();
     }
 
     function updateDataSourceBadge(source, count) {
@@ -2426,7 +2430,7 @@
 
       // Charts
       renderTrendChart(stats.trends || []);
-      renderPieChart(stats.platformStats || {});
+      renderPieChart(stats.platformStats || {}, stats.categoryStats || {});
       renderSentimentChart(stats.sentiment || {});
       renderCategoryBarChart(stats.categoryStats || {});
 
@@ -2494,6 +2498,36 @@
       
       // 情感分析对比
       renderCompareSentiment(projectA, projectB, statsA.sentiment || {}, statsB.sentiment || {});
+    }
+
+    function ensureEchartsReady() {
+      return typeof echarts !== 'undefined';
+    }
+
+    function disposeChart(el) {
+      if (!el || !ensureEchartsReady()) return;
+      const existing = echarts.getInstanceByDom(el);
+      if (existing) existing.dispose();
+    }
+
+    function initChart(el) {
+      if (!el || !ensureEchartsReady()) return null;
+      disposeChart(el);
+      const chart = echarts.init(el);
+      requestAnimationFrame(() => {
+        try { chart.resize(); } catch (_) { /* ignore */ }
+      });
+      return chart;
+    }
+
+    function getPlatformMap(platformStats) {
+      if (!platformStats) return {};
+      if (platformStats.platforms && typeof platformStats.platforms === 'object') {
+        return platformStats.platforms;
+      }
+      const map = { ...platformStats };
+      delete map.healthIndex;
+      return map;
     }
 
     function renderCompareTrendChart(projectA, projectB, trendsA, trendsB) {
@@ -2627,12 +2661,9 @@
 
     function renderTrendChart(trends) {
       const el = document.getElementById('trendChart');
-      if (!el) return;
-      // 先清空已有ECharts实例
-      const existingChart = echarts.getInstanceByDom(el);
-      if (existingChart) existingChart.dispose();
-      
-      const chart = echarts.init(el);
+      if (!el || !ensureEchartsReady()) return;
+      const chart = initChart(el);
+      if (!chart) return;
       const dates = trends.map(t => t.date || t.day || '');
       chart.setOption({
         tooltip: { trigger: 'axis' },
@@ -2695,98 +2726,137 @@
       window.addEventListener('resize', () => chart.resize());
     }
 
-    function renderPieChart(platformStats) {
+    function renderPieChart(platformStats, categoryStats) {
       const el = document.getElementById('pieChart');
       if (!el) return;
-      // 先清空已有内容和ECharts实例
-      el.innerHTML = '';
-      const existingChart = echarts.getInstanceByDom(el);
-      if (existingChart) existingChart.dispose();
-      
-      const chart = echarts.init(el);
-      const data = Object.entries(platformStats.platforms || {}).map(([key, val]) => ({
-        name: platformInfo[key]?.name || key,
-        value: val.count || val.mentions || 0,
-        itemStyle: { color: platformInfo[key]?.color || '#94a3b8' }
-      })).filter(d => d.value > 0);
+      if (!ensureEchartsReady()) {
+        el.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">图表库加载失败，请刷新或检查网络</div>';
+        return;
+      }
+
+      const chart = initChart(el);
+      if (!chart) return;
+
+      const platformMap = getPlatformMap(platformStats);
+      let data = Object.entries(platformMap)
+        .filter(([key]) => key !== 'healthIndex')
+        .map(([key, val]) => ({
+          name: platformInfo[key]?.name || key,
+          value: (val && (val.count ?? val.mentions)) || 0,
+          itemStyle: { color: platformInfo[key]?.color || '#94a3b8' },
+        }))
+        .filter(d => d.value > 0);
+
+      if (data.length === 0 && categoryStats) {
+        data = [
+          { name: 'PR', value: categoryStats.pr?.count || 0, itemStyle: { color: '#8b5cf6' } },
+          { name: '联盟', value: categoryStats.affiliate?.count || 0, itemStyle: { color: '#06b6d4' } },
+          { name: '红人内容', value: categoryStats.influencer?.count || 0, itemStyle: { color: '#ec4899' } },
+          { name: '社区舆情', value: categoryStats.social?.count || 0, itemStyle: { color: '#3b82f6' } },
+        ].filter(d => d.value > 0);
+      }
+
+      if (data.length === 0) {
+        chart.setOption({
+          title: {
+            text: '暂无渠道数据',
+            left: 'center',
+            top: 'center',
+            textStyle: { color: '#94a3b8', fontSize: 14, fontWeight: 'normal' },
+          },
+        });
+        return;
+      }
 
       chart.setOption({
         tooltip: { trigger: 'item' },
         series: [{
           type: 'pie',
-          radius: ['50%', '75%'],
+          radius: ['45%', '70%'],
           center: ['50%', '50%'],
-          avoidLabelOverlap: false,
+          avoidLabelOverlap: true,
           itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
-          label: { show: false },
-          emphasis: {
-            label: { show: true, fontSize: 12, fontWeight: 'bold' }
-          },
-          data: data.length > 0 ? data : [
-            { name: '新闻媒体', value: 8, itemStyle: { color: '#8b5cf6' } },
-            { name: '联盟导购', value: 8, itemStyle: { color: '#06b6d4' } },
-            { name: '社区论坛', value: 5, itemStyle: { color: '#f59e0b' } },
-            { name: 'YouTube', value: 6, itemStyle: { color: '#ff0000' } },
-            { name: 'TikTok', value: 4, itemStyle: { color: '#000000' } },
-            { name: 'Instagram', value: 3, itemStyle: { color: '#e4405f' } },
-            { name: 'Facebook', value: 3, itemStyle: { color: '#1877f2' } },
-            { name: 'Twitter/X', value: 2, itemStyle: { color: '#1da1f2' } },
-          ]
-        }]
+          label: { show: true, formatter: '{b}\n{d}%', fontSize: 11 },
+          data,
+        }],
       });
-      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function renderSentimentBreakdown(sentiment) {
+      const el = document.getElementById('sentimentBreakdown');
+      if (!el) return;
+      const pos = sentiment.positive?.count ?? 0;
+      const neu = sentiment.neutral?.count ?? 0;
+      const neg = sentiment.negative?.count ?? 0;
+      el.innerHTML = `
+        <div class="sentiment-item"><span class="sentiment-dot" style="background:#10b981"></span><span class="sentiment-label">正向</span><div class="sentiment-value">${pos}</div></div>
+        <div class="sentiment-item"><span class="sentiment-dot" style="background:#94a3b8"></span><span class="sentiment-label">中性</span><div class="sentiment-value">${neu}</div></div>
+        <div class="sentiment-item"><span class="sentiment-dot" style="background:#ef4444"></span><span class="sentiment-label">负向</span><div class="sentiment-value">${neg}</div></div>
+      `;
     }
 
     function renderSentimentChart(sentiment) {
       const el = document.getElementById('sentimentChart');
       if (!el) return;
-      // 先清空已有内容和ECharts实例
-      el.innerHTML = '';
-      const existingChart = echarts.getInstanceByDom(el);
-      if (existingChart) existingChart.dispose();
-      
-      const chart = echarts.init(el);
-      const positive = sentiment.positive?.count ?? sentiment.positive ?? 15;
-      const neutral = sentiment.neutral?.count ?? sentiment.neutral ?? 18;
-      const negative = sentiment.negative?.count ?? sentiment.negative ?? 6;
+      renderSentimentBreakdown(sentiment);
+
+      if (!ensureEchartsReady()) {
+        el.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">图表库加载失败</div>';
+        return;
+      }
+
+      const chart = initChart(el);
+      if (!chart) return;
+
+      const positive = sentiment.positive?.count ?? 0;
+      const neutral = sentiment.neutral?.count ?? 0;
+      const negative = sentiment.negative?.count ?? 0;
       const total = positive + neutral + negative;
+
+      if (total === 0) {
+        chart.setOption({
+          title: {
+            text: '暂无数据',
+            left: 'center',
+            top: 'center',
+            textStyle: { color: '#94a3b8', fontSize: 14, fontWeight: 'normal' },
+          },
+        });
+        return;
+      }
+
+      const pieData = [
+        { name: '正向', value: positive, itemStyle: { color: '#10b981' } },
+        { name: '中性', value: neutral, itemStyle: { color: '#cbd5e1' } },
+        { name: '负向', value: negative, itemStyle: { color: '#ef4444' } },
+      ].filter(d => d.value > 0);
+
       const posRate = Math.round((positive / total) * 100);
 
       chart.setOption({
+        tooltip: { trigger: 'item' },
         series: [{
-          type: 'gauge',
-          startAngle: 200,
-          endAngle: -20,
-          min: 0,
-          max: 100,
-          splitNumber: 10,
-          itemStyle: { color: '#10b981' },
-          progress: { show: true, width: 12 },
-          pointer: { show: false },
-          axisLine: { lineStyle: { width: 12, color: [[1, '#f1f5f9']] } },
-          axisTick: { show: false },
-          splitLine: { show: false },
-          axisLabel: { show: false },
-          anchor: { show: false },
-          title: { show: false },
-          detail: {
-            valueAnimation: true,
-            fontSize: 28,
+          type: 'pie',
+          radius: ['55%', '75%'],
+          center: ['50%', '45%'],
+          label: {
+            show: true,
+            position: 'center',
+            formatter: `正向\\n${posRate}%`,
+            fontSize: 16,
             fontWeight: 'bold',
             color: '#1e293b',
-            offsetCenter: [0, '0%'],
-            formatter: posRate + '%'
           },
-          data: [{ value: posRate }]
-        }]
+          data: pieData.length > 0 ? pieData : [{ name: '中性', value: 1, itemStyle: { color: '#cbd5e1' } }],
+        }],
       });
-      window.addEventListener('resize', () => chart.resize());
     }
 
     function renderCategoryBarChart(categoryStats) {
       const el = document.getElementById('categoryBarChart');
-      if (!el) return;
-      const chart = echarts.init(el);
+      if (!el || !ensureEchartsReady()) return;
+      const chart = initChart(el);
+      if (!chart) return;
       const categories = [
         { name: 'PR', value: categoryStats.pr?.count || 0, color: '#8b5cf6' },
         { name: '联盟', value: categoryStats.affiliate?.count || 0, color: '#06b6d4' },
