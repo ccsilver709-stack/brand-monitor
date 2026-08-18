@@ -186,7 +186,7 @@ async function getSubredditPosts(subreddit, options = {}) {
       likes: post.score || 0,
       comments: post.comment_count || 0,
       shares: 0,
-      country: 'US',
+      country: '',
       productLine: '',
       sentiment: 'neutral',
       relevance: 100,

@@ -10,6 +10,7 @@
  */
 
 const llmClassifier = require('./llmClassifier');
+const { inferCountry, resolveCountry } = require('../utils/country');
 
 // ========== 规则库 ==========
 
@@ -19,41 +20,10 @@ const AFFILIATE_DOMAINS = [
   'shareasale.com', 'shrsl.com', 'cj.com', 'clickbank.net',
   'rakuten.com', 'linksynergy.com', 'awin1.com', 'awin.com',
   'impactradius.com', 'ironsrc.com', 'flexoffers.com',
+  'dealabs.com', 'dealmoon.com', 'slickdeals.net', 'dealdoktor.de',
+  'dealab.de', 'mydealz.de', 'hotukdeals.com',
   'coupert.com', 'retailmenot.com', 'coupons.com',
-  'groupon.com', 'livingocial.com',
-  // ===== 全球 Deal 站 =====
-  // 美国
-  'dealnews.com', 'slickdeals.net', 'dealseek.com', 'techbargains.com',
-  'myvipon.com', 'koupon.ai', 'dealsofamerica.com', 'bensbargains.com',
-  'freestufffinder.com', 'edealinfo.com', '1sale.com', 'dealwiki.com',
-  '21usdeal.com', 'ihotoffers.com', 'swaggrabber.com', 'shopsale.com',
-  'fabulesslyfrugal.com', 'dansdeals.com', 'dealsplus.com',
-  'struggleville.net', 'dealam.com', 'simplexdeals.com',
-  'moneysavingmom.com', 'hip2save.com',
-  // 加拿大
-  'savealoonie.com', 'redflagdeals.com',
-  // 德国
-  'dealgott.de', 'mein-deal.com', 'dealbunny.de', 'snipz.de',
-  'monsterdealz.de', 'dealdoktor.de', 'mydealz.de', 'mytopdeals.net',
-  'sparbote.de', 'dealonkel.de',
-  // 英国
-  'hotukdeals.com', 'latestdeals.co.uk',
-  // 法国
-  'dealabs.com', 'serialdealer.fr', 'bons-plans-malins.com',
-  // 意大利
-  'scontify.net', 'bestdiscount.it', 'wikideal.it', 'tuttotek.it',
-  // 西班牙
-  'chollometro.com', 'super-chollos.com', 'cholloterapia.com',
-  'soydechollos.com', 'michollo.com', 'cholloschina.com',
-  'mepicaelchollo.com', 'nolodejesescapar.com',
-  // 墨西哥
-  'promodescuentos.com', 'megadescuentos.com',
-  // 波兰
-  'pepper.pl', 'hotshops.pl',
-  // 巴西
-  'gatry.com', 'promobit.com.br', 'pelando.com.br',
-  // 澳大利亚
-  'ozbargain.com.au',
+  'groupon.com', 'livingocial.com'
 ];
 
 // 联盟关键词
@@ -336,12 +306,17 @@ function classifyBatch(items) {
 async function classifyBatchAsync(items) {
   if (!items || items.length === 0) return [];
 
-  const ruleResults = classifyBatch(items);
+  const prepared = items.map((item) => {
+    const inferred = inferCountry(item);
+    return inferred ? { ...item, country: inferred } : { ...item, country: item.country || '' };
+  });
+
+  const ruleResults = classifyBatch(prepared);
   let llmResults = null;
 
   if (llmClassifier.isAvailable()) {
     try {
-      llmResults = await llmClassifier.classifyBatchWithLLM(items);
+      llmResults = await llmClassifier.classifyBatchWithLLM(prepared);
     } catch (e) {
       console.error('[Classifier] LLM batch failed, using rules:', e.message);
     }
@@ -349,13 +324,17 @@ async function classifyBatchAsync(items) {
 
   return ruleResults.map((item, idx) => {
     const llm = llmResults && llmResults[idx];
-    if (!llm || !llm.category) return item;
+    const country = resolveCountry(item, llm && llm.country);
+
+    if (!llm || !llm.category) {
+      return { ...item, country: country || 'US' };
+    }
 
     const domain = extractDomain(item.url || '');
     const merged = {
       ...item,
       category: llm.category,
-      country: llm.country || item.country || 'US',
+      country: country || 'US',
       classificationSource: 'llm',
       classificationReasons: [`LLM归类:${llm.category}`, ...(item.classificationReasons || [])],
       classificationConfidence: Math.max(item.classificationConfidence || 0, 85),

@@ -10,7 +10,6 @@ const reddit = require('../services/reddit');
 const googleCustomSearch = require('../services/googleCustomSearch');
 const redditdate = require('../services/redditdate');
 const llmClassifier = require('../services/llmClassifier');
-const dealSitesRSS = require('../services/dealSitesRSS');
 
 // Mock数据缓存
 let mockDataCache = null;
@@ -80,7 +79,7 @@ const SOCIAL_SITES = [
 async function fetchRealData(keywords, platforms, countries, timeRange) {
   const kwList = keywords.split(',').map(k => k.trim()).filter(Boolean);
   const pList = platforms ? platforms.split(',').map(p => p.trim()).filter(Boolean) : [];
-  const cList = countries ? countries.split(',').map(c => c.trim()).filter(Boolean) : ['US'];
+  const cList = countries ? countries.split(',').map(c => c.trim()).filter(Boolean) : [];
 
   const dataSourceDebug = {};
 
@@ -88,36 +87,51 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
   console.log('[Debug] pList:', JSON.stringify(pList));
   console.log('[Debug] kwList:', JSON.stringify(kwList));
 
-  const country = cList[0] || 'US';
+  const NEWS_LOCALES = [
+    { country: 'US', language: 'en' },
+    { country: 'GB', language: 'en' },
+    { country: 'DE', language: 'de' },
+    { country: 'FR', language: 'fr' },
+    { country: 'JP', language: 'ja' },
+    { country: 'AU', language: 'en' },
+    { country: 'CA', language: 'en' },
+    { country: 'SE', language: 'sv' },
+  ];
+  const selectedLocales = (cList.length
+    ? NEWS_LOCALES.filter((l) => cList.includes(l.country))
+    : NEWS_LOCALES
+  ).slice(0, 6);
+
   const timeParams = getTimeParams(timeRange);
 
   // 构建并行任务列表
   const tasks = [];
 
-  // 1. Google News RSS（PR媒体）
+  // 1. Google News RSS：多地区拉取，国家由后续大模型/规则归因
   if (pList.length === 0 || pList.includes('news')) {
-    tasks.push({
-      name: 'google_news_rss',
-      fn: async () => {
-        const results = await googleNewsRSS.batchSearch(kwList, {
-          country,
-          language: 'en',
-          timeRange: timeParams.googleNews,
-        });
-        return results;
-      }
+    selectedLocales.forEach((locale) => {
+      tasks.push({
+        name: `google_news_rss_${locale.country}`,
+        fn: async () => {
+          const results = await googleNewsRSS.batchSearch(kwList, {
+            country: locale.country,
+            language: locale.language,
+            timeRange: timeParams.googleNews,
+          });
+          return results;
+        },
+      });
     });
   } else {
     dataSourceDebug.google_news_rss = { status: 'skipped', reason: 'not in platform list' };
   }
 
-  // 2. YouTube Data API v3（视频）
+  // 2. YouTube Data API v3（视频）——不按单一国家锁 region
   if (youtube.isAvailable() && (pList.length === 0 || pList.includes('youtube'))) {
     tasks.push({
       name: 'youtube_api',
       fn: async () => {
         const results = await youtube.batchSearch(kwList, {
-          country,
           language: 'en',
           maxResults: 20,
           order: 'relevance',
@@ -153,27 +167,9 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
     };
   }
 
-  // 3b. 全球 Deal 站 RSS（联盟营销）
-  if (dealSitesRSS.isAvailable() && (pList.length === 0 || pList.includes('affiliate_site'))) {
-    tasks.push({
-      name: 'deal_sites_rss',
-      fn: async () => {
-        const results = await dealSitesRSS.batchSearch(kwList, {
-          countries: cList,
-          timeRange: parseInt(timeRange) || 30,
-          maxPerSite: 20,
-        });
-        return results;
-      }
-    });
-  } else {
-    dataSourceDebug.deal_sites_rss = { status: 'skipped', reason: 'not in platform list' };
-  }
-
   // 4. Google Custom Search - Web搜索
   if (googleCustomSearch.isAvailable()) {
     const gcsOptions = {
-      country,
       num: 10,
       dateRestrict: timeParams.gcs,
     };
@@ -246,7 +242,14 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
   );
 
   // 合并所有结果
-  const allResults = results.flat();
+  const merged = results.flat();
+  const seen = new Set();
+  const allResults = merged.filter((item) => {
+    const key = item.url || item.id;
+    if (!key || seen.has(key)) return !key;
+    seen.add(key);
+    return true;
+  });
 
   console.log('[Debug] === fetchRealData end ===');
   console.log('[Debug] final allResults length:', allResults.length);
@@ -263,9 +266,9 @@ async function fetchRealData(keywords, platforms, countries, timeRange) {
 
   // 自动分类（大模型优先，规则兜底）
   const classified = await classifyBatchAsync(allResults);
-  const finalResults = enrichResultsSentiment(classified);
+  const labeled = enrichResultsSentiment(classified);
 
-  return { results: finalResults, dataSourceDebug };
+  return { results: labeled, dataSourceDebug };
 }
 
 /**

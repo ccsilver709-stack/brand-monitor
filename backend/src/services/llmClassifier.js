@@ -111,9 +111,12 @@ function buildBatchPrompt(items) {
    - affiliate：联盟营销、导购折扣
    - influencer：红人内容（YouTube/TikTok/Instagram 等创作者内容）
    - social：社区舆情（Reddit/论坛/Facebook/Twitter 等讨论舆情）
-2) country：ISO 国家代码（如 US/DE/GB/FR/JP），根据语言、域名、内容推断；不确定用 US
+2) country：必须给出 ISO 两位国家代码（US/DE/GB/FR/JP/CA/AU/SE/NL/IT/ES/KR/CN 等）
+   - 优先根据：URL 域名/TLD（.de=DE, .co.uk=GB, .fr=FR, .jp=JP, .ca=CA, .au=AU）、媒体名、语言（德语/法语/日语等）、文中地名
+   - countryHint 只是弱提示，可能是抓取区域，不一定是内容真实国家；有域名/语言证据时不要盲从 US
+   - 只有英文且域名是 .com/.net、完全看不出其他国家时才用 US
 
-只返回 JSON：{"items":[{"i":0,"category":"pr","country":"US"}, ...]}
+只返回 JSON：{"items":[{"i":0,"category":"pr","country":"DE"}, ...]}
 
 待分类数据：
 ${JSON.stringify(payload)}`;

@@ -122,7 +122,7 @@ function formatResults(items, platform = 'web') {
     likes: 0,
     comments: 0,
     shares: 0,
-    country: 'US',
+    country: '',
     productLine: '',
     sentiment: 'neutral',
     relevance: 100 - index * 5,
